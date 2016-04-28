@@ -4,9 +4,9 @@ This is the final project for Notre Dame's CSE30332 (Programming Paradigms) cour
 
 Developers:
 
-  Mitchell Troy,
+    Mitchell Troy,
   
-  Mason Prosser
+    Mason Prosser
   
 Idea:
   To recreate the classic game, "Pacman," as a two-player, networked, game. The first player will control the pacman character, as usual, and the second player will control one of the ghost players.
