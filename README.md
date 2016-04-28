@@ -3,7 +3,8 @@
 This is the final project for Notre Dame's CSE30332 (Programming Paradigms) course.
 
 Developers:
-  Mitchell Troy
+  Mitchell Troy,
+  
   Mason Prosser
   
 Idea:
