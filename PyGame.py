@@ -4,7 +4,7 @@ import os
 import pygame
 from pygame.locals import *
 
-from GameObjects import Walls
+from GameObjects import *
 import math
 import spritesheet
 from twisted.internet.task import LoopingCall
@@ -16,7 +16,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
 import os
-
+import random
 #Set up variables for host and port to connect to
 SERVER_HOST = 'student01.cse.nd.edu'
 SERVER_PORT = 40093
@@ -40,26 +40,33 @@ class GameSpace:
 						"left": False,
 						"click": False}
 		
-		pygame.init()
+		pygame.init()    self.gs.deleteObject(self.ID)
 		# Each game object has a unique ID, Player and Enemy start at 0 and 1, respectively
-		self.laserID = 2
-		self.size = self.width,self.height = 455,500
+		
+		self.bulletID = 1
+		self.size = self.width,self.height = 455,475
 		self.screen = pygame.display.set_mode(self.size)
-
+		self.map = Map(self)
 		#7
-		self.black = 0,0,0
-		self.screen.fill(self.black)
+		
+
 
 
 		# initialize game objects
 		self.gameObjects = []
-		self.player1 = Player1()
-		self.walls = Walls()
-		self.gameObjects.append(self.walls)
+		self.gameObstacles=[]
+		self.bullets = []
+		self.turret1 = Turret((66,29,6,23),self)
+		self.turret2 = Turret((66,80,6,23),self)
+		self.player1 = Tank(self.turret1, "PLAYER_1",(50,50),self)
+		self.player2 = Tank(self.turret2, "PLAYER_2", (400,400),self)
+		self.walls = Walls(self)
+		#self.gameObjects.append(self.walls)
 		self.gameObjects.append(self.player1)
-		self.screen.blit(self.walls.image,self.walls.image.get_rect())
-
-
+		self.gameObjects.append(self.player2)
+		self.screen.blit(self.map.image,self.map.rect)
+		self.create_obstacles()
+        self.image= pygame.image.load("laser.png")
 		pygame.display.flip()
 
 	# given a key, lookup the event for it	
@@ -96,27 +103,41 @@ class GameSpace:
 				
 			if event.type == MOUSEBUTTONUP:	
 				self.inputState["click"] = False
-
+			#6 tick updating
+			for event, status in self.inputState.items():
+				# loop through dict, if the status of that button is True (pressed)
+				if status:
+					# on click, run click function in player
+					if event == "click":
+						self.gameObjects[0].click()
+					else:
+						# otherwise, it's a movement. Run move function
+						self.gameObjects[0].move(event)
 		
 	
 		
 		for item in self.gameObjects:
-			self.screen.blit(item.image, item.rect)
-	
-		#pygame.display.flip()
+			item.tick()
+			if item.NAME == "TANK":
+				self.screen.blit(item.image, item.rect)
+				self.screen.blit(item.turret.image,item.turret.rect)
+		 	else:
+				self.screen.blit(item.image,item.rect)
+				pygame.display.flip()
+		pygame.display.flip()
 
 
-	def deleteObject(self,objectID):
+	def delete_bullet(self,objectID):
 		# look for object in game objects, if found, remove from list
 		index = 0
 		found = False
-		for item in self.gameObjects:
+		for item in self.bullets:
 			if item.ID == objectID:
 				found = True
 				break
 			index += 1	
 		if found:
-			del(self.gameObjects[index])
+			del(self.bullets[index])
 	
 	# handle enemy explode sound		
 	#def init_game_objects(self):
@@ -129,7 +150,21 @@ class GameSpace:
 	#	self.screen.blit(game_map,game_map.get_rect())
 
 	#	pygame.display.flip()
-
+	def create_obstacles(self):
+		
+		for i in range(0,6):
+			rand_x = random.randint(50,380)
+			rand_y = random.randint(50,380)
+			rand_type = random.randint(1,2)
+			if (rand_x <= 90 and rand_x >=15 and rand_y <=90 and rand_y >= 15) :
+				rand_x = random.randint(50,380)
+				rand_y = random.randint(50,380)
+			elif (rand_x <= 400 and rand_x >= 350 and rand_y <= 450 and rand_y >= 360):
+				rand_x = random.randint(50,380)
+				rand_y = random.randint(50,380)
+			obstacle = Obstacle((rand_x,rand_y),rand_type)
+			self.screen.blit(obstacle.image,obstacle.rect)
+			self.gameObstacles.append(obstacle)
 class WorkHomeReceiver(LineReceiver):
 	def __init__(self,addr):
 		"""Constructor for Server running, servicing work connections on home machine"""
@@ -169,8 +204,6 @@ if __name__ == '__main__':
 	lc.start(1/60)
 
 	#reactor.listenTCP(COMMAND_PORT, WorkHomeFactory())
+	reactor.run()
 	#reactor.run()
-	#reactor.run()
-	while 1:
-		continue
 	lc.stop
