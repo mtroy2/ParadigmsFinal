@@ -40,7 +40,7 @@ class GameSpace:
 						"left": False,
 						"click": False}
 		
-		pygame.init()    self.gs.deleteObject(self.ID)
+		pygame.init()   
 		# Each game object has a unique ID, Player and Enemy start at 0 and 1, respectively
 		
 		self.bulletID = 1
@@ -53,20 +53,20 @@ class GameSpace:
 
 
 		# initialize game objects
-		self.gameObjects = []
-		self.gameObstacles=[]
+		self.game_objects = []
+		self.game_obstacles=[]
 		self.bullets = []
+		self.players = []
 		self.turret1 = Turret((66,29,6,23),self)
 		self.turret2 = Turret((66,80,6,23),self)
 		self.player1 = Tank(self.turret1, "PLAYER_1",(50,50),self)
 		self.player2 = Tank(self.turret2, "PLAYER_2", (400,400),self)
 		self.walls = Walls(self)
 		#self.gameObjects.append(self.walls)
-		self.gameObjects.append(self.player1)
-		self.gameObjects.append(self.player2)
+		self.players.append(self.player1)
+		self.players.append(self.player2)
 		self.screen.blit(self.map.image,self.map.rect)
 		self.create_obstacles()
-        self.image= pygame.image.load("laser.png")
 		pygame.display.flip()
 
 	# given a key, lookup the event for it	
@@ -102,28 +102,31 @@ class GameSpace:
 
 				
 			if event.type == MOUSEBUTTONUP:	
-				self.inputState["click"] = False
-			#6 tick updating
-			for event, status in self.inputState.items():
-				# loop through dict, if the status of that button is True (pressed)
-				if status:
-					# on click, run click function in player
-					if event == "click":
-						self.gameObjects[0].click()
-					else:
-						# otherwise, it's a movement. Run move function
-						self.gameObjects[0].move(event)
+				self.players[0].click()
+		#6 tick updating
+		for event, status in self.inputState.items():
+			# loop through dict, if the status of that button is True (pressed)
+			if status:
+				# on click, run click function in player
+				if event == "up" or event == "down":
+					# otherwise, it's a movement. Run move function
+					self.players[0].move(event)
+				elif event == "left" or event == "right":
+					self.players[0].rotate(event)
 		
-	
-		
-		for item in self.gameObjects:
-			item.tick()
-			if item.NAME == "TANK":
-				self.screen.blit(item.image, item.rect)
-				self.screen.blit(item.turret.image,item.turret.rect)
-		 	else:
-				self.screen.blit(item.image,item.rect)
-				pygame.display.flip()
+		# redraw map
+		self.screen.blit(self.map.image, self.map.rect)
+		#redraw bushes
+		for bush in self.game_obstacles:
+			self.screen.blit(bush.image, bush.rect)
+
+		for player in self.players:
+			player.tick()
+			self.screen.blit(player.image, player.rect)
+			self.screen.blit(player.turret.image, player.turret.rect)
+		for bullet in self.bullets:
+			bullet.tick()
+			self.screen.blit(bullet.image,bullet.rect)
 		pygame.display.flip()
 
 
@@ -164,7 +167,12 @@ class GameSpace:
 				rand_y = random.randint(50,380)
 			obstacle = Obstacle((rand_x,rand_y),rand_type)
 			self.screen.blit(obstacle.image,obstacle.rect)
-			self.gameObstacles.append(obstacle)
+			self.game_obstacles.append(obstacle)
+	def create_bullet(self, center, angle):
+		bullet = Bullet(center, angle, self.bulletID, self)
+		self.bullets.append(bullet)
+		# update id
+		self.bulletID += 1	
 class WorkHomeReceiver(LineReceiver):
 	def __init__(self,addr):
 		"""Constructor for Server running, servicing work connections on home machine"""

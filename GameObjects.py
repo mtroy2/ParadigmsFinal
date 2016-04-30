@@ -41,6 +41,7 @@ class Turret(pygame.sprite.Sprite):
 		self.orig_image = self.image
 		self.rect = self.image.get_rect()
 		self.length =23 #px
+		self.angle = math.radians(270)
 	def assign_center(self,center):
 		self.rect.center = center
 	#rotate to face mouse location
@@ -54,13 +55,13 @@ class Turret(pygame.sprite.Sprite):
 		oldCenter = self.rect.center
 		if dx != 0:
 		# set angle - initial offset of mouth
-			self.angle = math.atan2(dy,dx) - math.radians(70.0)
+			self.angle = math.atan2(dy,dx) 
 			if self.angle < 0:
 				# make angle always in positive radians
 				self.angle += (math.pi * 2)
-				self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle))
+				self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle ) + 90)
 				rotRectangle = self.image.get_rect()
-				rotRectangle.center = oldCenter
+				rotRectangle.center = tank_center
 
 				self.rect = rotRectangle
 
@@ -89,8 +90,99 @@ class Tank(pygame.sprite.Sprite):
 		self.turret = turret
 		self.turret.assign_center((center[0],center[1]+10))
 		self.mask = pygame.mask.from_surface(self.image)
+		self.angle = math.radians(270)
+		self.speed = 1
+		self.dy =  math.sin(self.angle) * self.speed
+		self.dx = math.cos(self.angle) * self.speed
+		self.currentx = float(self.rect.centerx)
+		self.currenty = float(self.rect.centery)
 	def tick(self):
 		self.turret.tick(self.rect.center)
+		
+	def click(self):
+		self.gs.create_bullet(self.rect.center,self.turret.angle)
+	def move(self, direction):
+		collision_detected = 0
+		
+		if direction == "up":
+			for bush in self.gs.game_obstacles:
+				mask_point = pygame.sprite.collide_mask(self,bush)
+				if mask_point !=None:
+					print "UP COLLIDE"
+					collision_detected = 1
+					print "Collision point = ", mask_point
+			if collision_detected != 1:
+				self.currentx += self.dx
+				self.currenty -= self.dy
+				# set rect center to x,y 
+				self.rect.centerx = self.currentx
+				self.rect.centery = self.currenty
+
+				self.turret.rect.centerx = self.currentx
+				self.turret.rect.centery = self.currenty
+			else:
+				self.currentx += self.dx
+				self.currenty += self.dy
+				# set rect center to x,y 
+				self.rect.centerx = self.currentx
+				self.rect.centery = self.currenty
+
+				self.turret.rect.centerx = self.currentx
+				self.turret.rect.centery = self.currenty
+		if direction == "down":
+			for bush in self.gs.game_obstacles:
+				mask_point = pygame.sprite.collide_mask(self,bush)
+				if mask_point !=None:
+					collision_detected = 1
+					print "Collision point = ", mask_point
+			if collision_detected != 1:
+				self.currentx -= self.dx
+				self.currenty += self.dy
+				# set rect center to x,y 
+				self.rect.centerx = self.currentx
+				self.rect.centery = self.currenty
+
+				self.turret.rect.centerx = self.currentx
+				self.turret.rect.centery = self.currenty
+			else:
+				self.currentx += self.dx
+				self.currenty -= self.dy
+				# set rect center to x,y 
+				self.rect.centerx = self.currentx
+				self.rect.centery = self.currenty
+
+				self.turret.rect.centerx = self.currentx
+				self.turret.rect.centery = self.currenty
+	def rotate(self,direction):
+		if direction == "left":
+			oldCenter = self.rect.center
+			self.angle = self.angle +math.radians(1)
+			if self.angle > 2*math.pi:
+				self.angle = self.angle - 2*math.pi
+
+			elif self.angle < -2*math.pi:
+				self.angle = self.angle + 2*math.pi
+			self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle)-270)
+			rotRectangle = self.image.get_rect()
+			rotRectangle.center = oldCenter
+			self.rect = rotRectangle
+
+		else:
+			oldCenter = self.rect.center
+			self.angle = self.angle -math.radians(1)
+			print "Angle = " + str( math.degrees(self.angle))
+			if self.angle > 2*math.pi:
+				self.angle = self.angle - 2*math.pi
+				print "resetting angle"
+			elif self.angle < -2*math.pi:
+				self.angle = self.angle + 2*math.pi
+				print "resetting angle"
+			self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle)-270)
+			rotRectangle = self.image.get_rect()
+			rotRectangle.center = oldCenter
+			self.rect = rotRectangle
+		self.dy =  math.sin(self.angle ) * self.speed
+		self.dx = math.cos(self.angle) * self.speed
 class Map(pygame.sprite.Sprite):
 	def __init__(self,gs=None):
 		self.gs = gs
@@ -108,9 +200,7 @@ class Obstacle(pygame.sprite.Sprite):
 		elif code == 2:
 			self.image = pygame.image.load(os.getcwd()+ "/sprites/Small_bush.png").convert_alpha()
 		self.rect = self.image.get_rect()
-		self.rect.center =      
-        self.dy =  math.sin(self.angle) * self.velocity
-        self.dx = math.cos(self.angle) * self.velocity center
+		self.rect.center = center
 		self.mask = pygame.mask.from_surface(self.image)
 	def tick(self):
 		pass
@@ -121,31 +211,40 @@ class Bullet(pygame.sprite.Sprite):
 		self.angle = angle
 		self.total_distance = 0.0
 
-        pygame.sprite.Sprite.__init__(self)
+		pygame.sprite.Sprite.__init__(self)
 		self.gs = gs
 		self.NAME = "BULLET"
 		self.ID = ID
 		self.image= pygame.image.load(os.getcwd()+ "/sprites/Bullet.png")
-        self.rect = self.image.get_rect()
+		self.rect = self.image.get_rect()
+		self.rect.center = center
 		self.angle = angle
-		self.velocity = 2.0      
-        self.dy =  math.sin(self.angle) * self.velocity
-        self.dx = math.cos(self.angle) * self.velocity
-		self.dist_per_tick = math.sqrt( math.abs(dx)*math.abs(dx) + math.abs(dy)*math.abs(dy))
+		self.velocity = 1
+		self.dy =  math.sin(self.angle) * self.velocity
+		self.dx = math.cos(self.angle) * self.velocity
+		self.dist_per_tick = math.sqrt( math.fabs(self.dx)*math.fabs(self.dx) + math.fabs(self.dy)*math.fabs(self.dy))
         # these two handle the fact that you can't update an image by less than 1 pixel
         # they keep track of the running total of movement, as floats
-        self.currentx = float(self.rect.centerx)
-        self.currenty = float(self.rect.centery)
+		self.currentx = float(self.rect.centerx)
+		self.currenty = float(self.rect.centery)
+		self.mask = pygame.mask.from_surface(self.image)
 	def tick(self):
-        # update x,y
+		# update x,y
 		self.total_distance = self.total_distance + self.dist_per_tick
 		if (self.total_distance > 300):
-			
-        self.currentx += self.dx
-        self.currenty -= self.dy
-        # set rect center to x,y 
-        self.rect.centerx = self.currentx
-        self.rect.centery = self.currenty
+			self.gs.delete_bullet(self.ID)
+ 		hit_bush = 0
+		for bush in self.gs.game_obstacles :
+			if pygame.sprite.collide_mask(self, bush) != None:
+				hit_bush = 1
+		if hit_bush == 1:
+			self.gs.delete_bullet(self.ID)
+		else:
+			self.currentx += self.dx
+			self.currenty -= self.dy
+			# set rect center to x,y 
+			self.rect.centerx = self.currentx
+			self.rect.centery = self.currenty
         
-        if  self.rect.centerx > self.gs.width or self.rect.centery > self.gs.height or self.rect.centerx < 0 or self.rect.centery < 0:
-            self.gs.deleteObject(self.ID)
+			if  self.rect.centerx > self.gs.width or self.rect.centery > self.gs.height or self.rect.centerx < 0 or self.rect.centery < 0:
+				self.gs.delete_bullet(self.ID)
