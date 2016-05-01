@@ -10,7 +10,9 @@ Developers:
   
 Idea:
 
-     To recreate the classic game, "Pacman," as a two-player, networked, game. The first player will control the pacman character, as usual, and the second player will control one of the ghost players.
+     To create a 2-player tank shooting game. The first player boots up the game and waits for a second player to join. 
+     After a second player joins, and they both click start game, the game begins. 
+     Each round ends after a player loses all their tank's health.
 
 Libraries:
     
