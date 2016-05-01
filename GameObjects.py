@@ -15,6 +15,15 @@ from twisted.internet.tcp import Port
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
+TITLE_SCREEN = 0
+WAITING_2 = 1
+WAITING_1 = 2
+INFO_SCREEN = 3
+WAITING_FOR_PLAYER = 4
+PLAYING = 5
+PLAYER_1_DEAD = 6
+PLAYER_2_DEAD = 7
+
 
 class Walls(pygame.sprite.Sprite):
 	def __init__(self,gs=None):
@@ -32,15 +41,17 @@ class Walls(pygame.sprite.Sprite):
 		pass
 
 class Turret(pygame.sprite.Sprite):
-	def __init__(self,sheet_location,gs=None):
+	def __init__(self,owner,gs=None):
 		self.gs = gs
 		self.NAME = "TURRET"
-		ss= spritesheet.spritesheet(os.getcwd() + "/sprites/sprites.png")
+		if owner == "PLAYER_1":
+			self.image = pygame.image.load(os.getcwd()+ "/sprites/P1_turret.png").convert_alpha()
+		else:
+			self.image = pygame.image.load(os.getcwd()+"/sprites/P2_turret.png").convert_alpha()
 		pygame.sprite.Sprite.__init__(self)
-		self.image = ss.image_at(sheet_location).convert_alpha()
 		self.orig_image = self.image
 		self.rect = self.image.get_rect()
-		self.length =23 #px
+		self.length =26 #px
 		self.angle = math.radians(270)
 	def assign_center(self,center):
 		self.rect.center = center
@@ -59,11 +70,10 @@ class Turret(pygame.sprite.Sprite):
 			if self.angle < 0:
 				# make angle always in positive radians
 				self.angle += (math.pi * 2)
-				self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle ) + 90)
-				rotRectangle = self.image.get_rect()
-				rotRectangle.center = tank_center
-
-				self.rect = rotRectangle
+			self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle ) + 90)
+			rotRectangle = self.image.get_rect()
+			rotRectangle.center = tank_center
+			self.rect = rotRectangle
 
 
 
@@ -78,12 +88,11 @@ class Tank(pygame.sprite.Sprite):
 		self.gs = gs
 		self.NAME = "TANK"
 		self.PLAYER = player
-		ss = spritesheet.spritesheet(os.getcwd() + "/sprites/sprites.png")
 		pygame.sprite.Sprite.__init__(self)
 		if player == "PLAYER_1":
-			self.image = ss.image_at((2,2,50,50)).convert_alpha()
+			self.image = pygame.image.load(os.getcwd()+ "/sprites/P1_tank.png").convert_alpha()
 		else:
-			self.image = ss.image_at((2,53,50,50)).convert_alpha()
+			self.image = pygame.image.load(os.getcwd()+"/sprites/P2_tank.png").convert_alpha()
 		self.orig_image = self.image
 		self.rect = self.image.get_rect()
 		self.rect.center = center  # correct point is 227,378
@@ -91,51 +100,81 @@ class Tank(pygame.sprite.Sprite):
 		self.turret.assign_center((center[0],center[1]+10))
 		self.mask = pygame.mask.from_surface(self.image)
 		self.angle = math.radians(270)
-		self.speed = 1
+		self.speed = .5
 		self.dy =  math.sin(self.angle) * self.speed
 		self.dx = math.cos(self.angle) * self.speed
 		self.currentx = float(self.rect.centerx)
 		self.currenty = float(self.rect.centery)
+		self.health = 100
 	def tick(self):
 		self.turret.tick(self.rect.center)
-		
+	def do_damage(self,damage):
+		self.health -= damage
+		print "OUCH! Health now = " + str(self.health)
 	def click(self):
 		self.gs.create_bullet(self.rect.center,self.turret.angle)
 	def move(self, direction):
 		collision_detected = 0
-		
+
 		if direction == "up":
+			mask_point = None
 			for bush in self.gs.game_obstacles:
-				mask_point = pygame.sprite.collide_mask(self,bush)
-				if mask_point !=None:
-					print "UP COLLIDE"
-					collision_detected = 1
-					print "Collision point = ", mask_point
-			if collision_detected != 1:
-				self.currentx += self.dx
-				self.currenty -= self.dy
-				# set rect center to x,y 
-				self.rect.centerx = self.currentx
-				self.rect.centery = self.currenty
+				# if rectangles overlap
+				if self.rect.colliderect(bush.rect):
+					mask_point = pygame.sprite.collide_mask(self,bush)
+					if mask_point != None:
+						print "Mask overlap"
+						collision_detected = 1
+						mask_y = mask_point[1]
+			# no collision with bushes
+			if not mask_point:
+				if (self.currentx + self.dx > 500) or (self.currentx + self.dx <= 0) or (self.currenty -self.dy <=100) or (self.currenty -self.dy >= 600):
+					self.currentx -= self.dx
+					self.currenty += self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
 
-				self.turret.rect.centerx = self.currentx
-				self.turret.rect.centery = self.currenty
+					self.turret.rect.centerx = self.currentx
+					self.turret.rect.centery = self.currenty
+				else:
+					self.currentx += self.dx
+					self.currenty -= self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
+					self.turret.rect.centerx = self.currentx
+					self.turret.rect.centery = self.currenty
 			else:
-				self.currentx += self.dx
-				self.currenty += self.dy
-				# set rect center to x,y 
-				self.rect.centerx = self.currentx
-				self.rect.centery = self.currenty
+				# collision on the back of the tank while going forward (OK)
+				if mask_y < 25:
+					self.currentx += self.dx
+					self.currenty -= self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
 
-				self.turret.rect.centerx = self.currentx
-				self.turret.rect.centery = self.currenty
+					self.turret.rect.centerx = self.currentx
+					self.turret.rect.centery = self.currenty
+				else:
+					self.currentx -= self.dx
+					self.currenty += self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
+
+					self.turret.rect.centerx = self.currentx
+					self.turret.rect.centery = self.currenty
 		if direction == "down":
+			mask_point = None
 			for bush in self.gs.game_obstacles:
-				mask_point = pygame.sprite.collide_mask(self,bush)
-				if mask_point !=None:
-					collision_detected = 1
-					print "Collision point = ", mask_point
-			if collision_detected != 1:
+				# if rectangles overlap
+				if self.rect.colliderect(bush.rect):
+					mask_point = pygame.sprite.collide_mask(self,bush)
+					if mask_point != None:
+						collision_detected = 1
+						mask_y = mask_point[1]
+			if not mask_point:
 				self.currentx -= self.dx
 				self.currenty += self.dy
 				# set rect center to x,y 
@@ -144,18 +183,33 @@ class Tank(pygame.sprite.Sprite):
 
 				self.turret.rect.centerx = self.currentx
 				self.turret.rect.centery = self.currenty
+			# found collision
 			else:
-				self.currentx += self.dx
-				self.currenty -= self.dy
-				# set rect center to x,y 
-				self.rect.centerx = self.currentx
-				self.rect.centery = self.currenty
+				# collision on front of tank, we are going reverse, so keep going
+		
+				if mask_point[1] > 25:
+					self.currentx -= self.dx
+					self.currenty += self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
+
+					self.turret.rect.centerx = self.currentx
+					self.turret.rect.centery = self.currenty
+
+				else:
+					self.currentx += self.dx
+					self.currenty -= self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
 
 				self.turret.rect.centerx = self.currentx
 				self.turret.rect.centery = self.currenty
 	def rotate(self,direction):
 		if direction == "left":
-			oldCenter = self.rect.center
+			oldCenter = self.rect.center		# if rectangles overlap
+
 			self.angle = self.angle +math.radians(1)
 			if self.angle > 2*math.pi:
 				self.angle = self.angle - 2*math.pi
@@ -166,23 +220,23 @@ class Tank(pygame.sprite.Sprite):
 			rotRectangle = self.image.get_rect()
 			rotRectangle.center = oldCenter
 			self.rect = rotRectangle
-
+			
 		else:
 			oldCenter = self.rect.center
 			self.angle = self.angle -math.radians(1)
-			print "Angle = " + str( math.degrees(self.angle))
+
 			if self.angle > 2*math.pi:
 				self.angle = self.angle - 2*math.pi
-				print "resetting angle"
 			elif self.angle < -2*math.pi:
 				self.angle = self.angle + 2*math.pi
-				print "resetting angle"
 			self.image = pygame.transform.rotate(self.orig_image,math.degrees(self.angle)-270)
 			rotRectangle = self.image.get_rect()
 			rotRectangle.center = oldCenter
 			self.rect = rotRectangle
 		self.dy =  math.sin(self.angle ) * self.speed
 		self.dx = math.cos(self.angle) * self.speed
+
+
 class Map(pygame.sprite.Sprite):
 	def __init__(self,gs=None):
 		self.gs = gs
@@ -190,6 +244,7 @@ class Map(pygame.sprite.Sprite):
 		pygame.sprite.Sprite.__init__(self)
 		self.image = ss.image_at((0,0,500,500))
 		self.rect = self.image.get_rect()
+		self.rect.topleft = (0,100)
 class Obstacle(pygame.sprite.Sprite):
 	def __init__(self,center,code,gs=None):
 		self.gs = gs
@@ -210,7 +265,7 @@ class Bullet(pygame.sprite.Sprite):
 		self.center = center
 		self.angle = angle
 		self.total_distance = 0.0
-
+		self.damage = 20
 		pygame.sprite.Sprite.__init__(self)
 		self.gs = gs
 		self.NAME = "BULLET"
@@ -234,17 +289,68 @@ class Bullet(pygame.sprite.Sprite):
 		if (self.total_distance > 300):
 			self.gs.delete_bullet(self.ID)
  		hit_bush = 0
+		hit_player = 0
 		for bush in self.gs.game_obstacles :
-			if pygame.sprite.collide_mask(self, bush) != None:
-				hit_bush = 1
-		if hit_bush == 1:
+			# if rectangles overlap
+			if self.rect.colliderect(bush.rect):
+				if pygame.sprite.collide_mask(self, bush) != None:
+					hit_bush = 1
+		if self.total_distance > 15:
+			for player in self.gs.players:
+				if self.rect.colliderect(player.rect):
+					if pygame.sprite.collide_mask(self,player) != None:
+						player.do_damage(self.damage)
+						hit_player = 1
+		if hit_bush == 1 or hit_player == 1:
 			self.gs.delete_bullet(self.ID)
+
+	
 		else:
 			self.currentx += self.dx
 			self.currenty -= self.dy
 			# set rect center to x,y 
 			self.rect.centerx = self.currentx
 			self.rect.centery = self.currenty
-        
-			if  self.rect.centerx > self.gs.width or self.rect.centery > self.gs.height or self.rect.centerx < 0 or self.rect.centery < 0:
-				self.gs.delete_bullet(self.ID)
+        	# hit left side of screen
+			if  (self.rect.centerx >= self.gs.width) or (self.rect.centerx <= 0) :
+				self.dx = self.dx * -1
+		 	elif (self.rect.centery >= 600) or  (self.rect.centery <= 100):
+				self.dy = self.dy * -1
+class Title_screen(pygame.sprite.Sprite):
+	def __init__(self,gs=None):
+		self.image = pygame.image.load(os.getcwd() + "/screens/Title_screen.png")
+		self.rect = self.image.get_rect()
+		self.play_button = pygame.Rect(165,123,176,62)
+		self.info_button = pygame.Rect(167,206,176,62)
+		self.gs = gs
+		self.gs.screen.blit(self.image, self.rect)
+		self.current_state = True
+	#sets next game state on click
+	def click(self, click_point):
+		# click was in play button
+		if self.play_button.collidepoint(click_point):
+			if self.gs.state == WAITING_2:
+				self.gs.state = WAITING_1
+			elif self.gs.state == WAITING_1:
+				self.gs.state = PLAYING
+				self.current_state = False
+			self.gs.screen.fill ((0,0,0))
+			
+
+		elif self.info_button.collidepoint(click_point):
+			self.gs.state = INFO_SCREEN
+			self.current_state = False
+
+class Info_screen(pygame.sprite.Sprite):
+	def __init__(self, gs = None):
+		self.image = pygame.image.load(os.getcwd()+ "/screens/Info_screen.png")	
+		self.rect = self.image.get_rect()
+		self.return_button = pygame.Rect(322,0,129,35)
+		self.gs = gs
+		self.current_state = False
+	def click(self,click_point):
+		if self.return_button.collidepoint(click_point):
+			self.gs.state = TITLE_SCREEN	
+			
+			self.current_state = False	
+		

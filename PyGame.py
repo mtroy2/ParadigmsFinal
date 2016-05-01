@@ -15,7 +15,6 @@ from twisted.internet.tcp import Port
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
-import os
 import random
 #Set up variables for host and port to connect to
 SERVER_HOST = 'student01.cse.nd.edu'
@@ -23,6 +22,14 @@ SERVER_PORT = 40093
 COMMAND_PORT = 32010
 DATA_PORT = 32011
 CLIENT_PORT = 8888
+TITLE_SCREEN = 0
+WAITING_2 = 1
+WAITING_1 = 2
+INFO_SCREEN = 3
+WAITING_FOR_PLAYER = 4
+PLAYING = 5
+PLAYER_1_DEAD = 6
+PLAYER_2_DEAD = 7
 
 class GameSpace:
 	def __init__(self):
@@ -42,33 +49,37 @@ class GameSpace:
 		
 		pygame.init()   
 		# Each game object has a unique ID, Player and Enemy start at 0 and 1, respectively
-		
+		self.font = pygame.font.SysFont("monospace",15)
 		self.bulletID = 1
-		self.size = self.width,self.height = 455,475
+		self.size = self.width,self.height = 500,700
 		self.screen = pygame.display.set_mode(self.size)
 		self.map = Map(self)
 		#7
+		self.state = WAITING_2
+
+		self.info_screen = Info_screen(self)
+		self.title_screen = Title_screen(self)
 		
-
-
-
 		# initialize game objects
 		self.game_objects = []
 		self.game_obstacles=[]
 		self.bullets = []
 		self.players = []
-		self.turret1 = Turret((66,29,6,23),self)
-		self.turret2 = Turret((66,80,6,23),self)
-		self.player1 = Tank(self.turret1, "PLAYER_1",(50,50),self)
-		self.player2 = Tank(self.turret2, "PLAYER_2", (400,400),self)
+		self.turret1 = Turret("PLAYER_1",self)
+		self.turret2 = Turret("PLAYER_2",self)
+		self.player1 = Tank(self.turret1, "PLAYER_1",(50,150),self)
+		self.player2 = Tank(self.turret2, "PLAYER_2", (400,500),self)
 		self.walls = Walls(self)
 		#self.gameObjects.append(self.walls)
 		self.players.append(self.player1)
 		self.players.append(self.player2)
-		self.screen.blit(self.map.image,self.map.rect)
 		self.create_obstacles()
-		pygame.display.flip()
 
+		self.waiting_text_state = 1
+		self.waiting_counter = 0.0
+		self.waiting_text_1 = self.font.render("Waiting for other player.",1,(255,255,255))
+		self.waiting_text_2 = self.font.render("Waiting for other player..",1,(255,255,255))
+		self.waiting_text_3 = self.font.render("Waiting for other player...",1,(255,255,255))
 	# given a key, lookup the event for it	
 	def lookupBinding(self,keyEntered):
 		for binding,keyBound in self.bindings.items():
@@ -78,7 +89,57 @@ class GameSpace:
 
 
 	def main(self):
-		
+	
+		if self.state == TITLE_SCREEN or self.state == WAITING_1 or self.state == WAITING_2:
+			self.title_menu()
+			pygame.display.flip()
+
+
+
+		elif self.state == INFO_SCREEN:
+			self.info_menu()
+			pygame.display.flip()
+		elif self.state == PLAYING:
+			self.active_game()
+
+
+
+	def info_menu(self):
+		if self.info_screen.current_state == False:
+			self.info_screen.current_state = True
+			self.screen.blit(self.info_screen.image,self.info_screen.rect)
+		for event in pygame.event.get():	
+			if event.type == QUIT:
+				sys.exit()
+			if event.type == MOUSEBUTTONUP:
+				mx,my = pygame.mouse.get_pos()
+				self.info_screen.click((mx,my))
+	def title_menu(self):
+		self.screen.fill((0,0,0))
+		self.screen.blit(self.title_screen.image,self.title_screen.rect)
+		if self.state == WAITING_1:
+			self.waiting_counter += 1./60
+			if self.waiting_counter >= 0.5:
+				self.waiting_counter = 0
+				self.waiting_text_state += 1
+				if self.waiting_text_state ==4:
+					self.waiting_text_state = 1
+			if self.waiting_text_state == 1:
+				self.screen.blit(self.waiting_text_1,(150,270))
+			elif self.waiting_text_state == 2:
+				self.screen.blit(self.waiting_text_2,(150,270))
+			elif self.waiting_text_state == 3:
+				self.screen.blit(self.waiting_text_3,(150,270))
+	
+	
+
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				sys.exit()
+			if event.type == MOUSEBUTTONUP:
+				mx,my = pygame.mouse.get_pos()
+				self.title_screen.click((mx,my))
+	def active_game(self):
 		#5 user input reading from queue
 		for event in pygame.event.get():
 			#exit if X is pressed
@@ -113,7 +174,7 @@ class GameSpace:
 					self.players[0].move(event)
 				elif event == "left" or event == "right":
 					self.players[0].rotate(event)
-		
+		self.screen.fill((0,0,0))
 		# redraw map
 		self.screen.blit(self.map.image, self.map.rect)
 		#redraw bushes
@@ -127,7 +188,13 @@ class GameSpace:
 		for bullet in self.bullets:
 			bullet.tick()
 			self.screen.blit(bullet.image,bullet.rect)
+
+		# Draw bounding boxes
+		#pygame.draw.polygon(self.screen,(0,0,0),[self.players[0].rect.topleft,
+		#	self.players[0].rect.topright,self.players[0].rect.bottomright,self.players[0].rect.bottomleft], 1)
 		pygame.display.flip()
+
+
 
 
 	def delete_bullet(self,objectID):
@@ -142,34 +209,28 @@ class GameSpace:
 		if found:
 			del(self.bullets[index])
 	
-	# handle enemy explode sound		
-	#def init_game_objects(self):
-	#	ss = spritesheet.spritesheet(os.getcwd() + "/tiles/sprites.png")
-	#	game_map = pygame.transform.scale2x(ss.image_at((226,0,235,248)))
-	#	block = pygame.transform.scale2x(ss.image_at((9,10,5,5)))
-		
-	#	pacman = ss.image_at((457,0,10,15))
-	#	power_boost = pygame.transform.scale2x(ss.image_at((8,24,8,8)))
-	#	self.screen.blit(game_map,game_map.get_rect())
 
-	#	pygame.display.flip()
 	def create_obstacles(self):
 		
-		for i in range(0,6):
+		for i in range(0,8):
 			rand_x = random.randint(50,380)
-			rand_y = random.randint(50,380)
+			rand_y = random.randint(150,480)
 			rand_type = random.randint(1,2)
 			if (rand_x <= 90 and rand_x >=15 and rand_y <=90 and rand_y >= 15) :
 				rand_x = random.randint(50,380)
-				rand_y = random.randint(50,380)
+				rand_y = random.randint(150,480)
 			elif (rand_x <= 400 and rand_x >= 350 and rand_y <= 450 and rand_y >= 360):
 				rand_x = random.randint(50,380)
-				rand_y = random.randint(50,380)
+				rand_y = random.randint(150,480)
 			obstacle = Obstacle((rand_x,rand_y),rand_type)
-			self.screen.blit(obstacle.image,obstacle.rect)
 			self.game_obstacles.append(obstacle)
+
 	def create_bullet(self, center, angle):
-		bullet = Bullet(center, angle, self.bulletID, self)
+		# calculate initial point of bullet
+		dy =  math.sin(angle) * 26
+		dx = math.cos(angle) * 26
+		new_center = (center[0]+ dx,center[1]-dy)
+		bullet = Bullet(new_center, angle, self.bulletID, self)
 		self.bullets.append(bullet)
 		# update id
 		self.bulletID += 1	
