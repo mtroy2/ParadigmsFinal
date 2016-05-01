@@ -5,6 +5,7 @@ import pygame
 from pygame.locals import *
 
 from GameObjects import *
+from GameScreens import *
 import math
 import spritesheet
 from twisted.internet.task import LoopingCall
@@ -59,7 +60,7 @@ class GameSpace:
 
 		self.info_screen = Info_screen(self)
 		self.title_screen = Title_screen(self)
-		
+		self.win_screen = Win_screen(self)
 		# initialize game objects
 		self.game_objects = []
 		self.game_obstacles=[]
@@ -80,6 +81,8 @@ class GameSpace:
 		self.waiting_text_1 = self.font.render("Waiting for other player.",1,(255,255,255))
 		self.waiting_text_2 = self.font.render("Waiting for other player..",1,(255,255,255))
 		self.waiting_text_3 = self.font.render("Waiting for other player...",1,(255,255,255))
+		self.p1_win_text = self.font.render("PLAYER 1 WINS!",1,(255,255,255))
+		self.p2_win_text = self.font.render("PLAYER 2 WINS!",1,(255,255,255))
 	# given a key, lookup the event for it	
 	def lookupBinding(self,keyEntered):
 		for binding,keyBound in self.bindings.items():
@@ -94,16 +97,32 @@ class GameSpace:
 			self.title_menu()
 			pygame.display.flip()
 
-
-
 		elif self.state == INFO_SCREEN:
 			self.info_menu()
 			pygame.display.flip()
 		elif self.state == PLAYING:
 			self.active_game()
 
+		elif self.state == PLAYER_1_DEAD or self.state == PLAYER_2_DEAD:
+			self.win_menu()
+			pygame.display.flip()
 
-
+	def win_menu(self):
+	
+		if self.win_screen.current_state == False:
+			self.screen.fill((0,0,0))
+			self.win_screen.current_state = True
+			self.screen.blit(self.win_screen.image, self.win_screen.rect)
+			if self.state == PLAYER_1_DEAD:
+				self.screen.blit(self.p2_win_text, (20,37))
+			else:
+				self.screen.blit(self.p1_win_text, (20,37))
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				self.state = WAITING_2
+			if event.type == MOUSEBUTTONUP:
+				mx,my = pygame.mouse.get_pos()
+				self.win_screen.click((mx,my))
 	def info_menu(self):
 		if self.info_screen.current_state == False:
 			self.info_screen.current_state = True
@@ -113,7 +132,7 @@ class GameSpace:
 				sys.exit()
 			if event.type == MOUSEBUTTONUP:
 				mx,my = pygame.mouse.get_pos()
-				self.info_screen.click((mx,my))
+				self.title_screen.click((mx,my))
 	def title_menu(self):
 		self.screen.fill((0,0,0))
 		self.screen.blit(self.title_screen.image,self.title_screen.rect)
@@ -145,7 +164,7 @@ class GameSpace:
 			#exit if X is pressed
 			if event.type == QUIT:
 				sys.exit()
-			# if any key is pressed, look it up,
+			# if anyile "PyGame.py", line 9 key is pressed, look it up,
 			# if it is one of the mapped keys, make its pressed status true
 			if event.type == KEYDOWN:
 				binding = self.lookupBinding(event.key)
@@ -213,14 +232,14 @@ class GameSpace:
 	def create_obstacles(self):
 		
 		for i in range(0,8):
-			rand_x = random.randint(50,380)
+			rand_x = random.randint(120,380)
 			rand_y = random.randint(150,480)
 			rand_type = random.randint(1,2)
 			if (rand_x <= 90 and rand_x >=15 and rand_y <=90 and rand_y >= 15) :
-				rand_x = random.randint(50,380)
+				rand_x = random.randint(120,380)
 				rand_y = random.randint(150,480)
 			elif (rand_x <= 400 and rand_x >= 350 and rand_y <= 450 and rand_y >= 360):
-				rand_x = random.randint(50,380)
+				rand_x = random.randint(120,380)
 				rand_y = random.randint(150,480)
 			obstacle = Obstacle((rand_x,rand_y),rand_type)
 			self.game_obstacles.append(obstacle)
@@ -234,6 +253,23 @@ class GameSpace:
 		self.bullets.append(bullet)
 		# update id
 		self.bulletID += 1	
+
+	def reset(self):
+		del self.game_objects[:]
+		del self.game_obstacles[:]
+		del self.bullets[:]
+		del self.players[:]
+		self.bulletID = 1
+		self.turret1 = Turret("PLAYER_1",self)
+		self.turret2 = Turret("PLAYER_2",self)
+		self.player1 = Tank(self.turret1, "PLAYER_1",(50,150),self)
+		self.player2 = Tank(self.turret2, "PLAYER_2", (400,500),self)
+		self.walls = Walls(self)
+		#self.gameObjects.append(self.walls)
+		self.players.append(self.player1)
+		self.players.append(self.player2)
+		self.create_obstacles()
+
 class WorkHomeReceiver(LineReceiver):
 	def __init__(self,addr):
 		"""Constructor for Server running, servicing work connections on home machine"""
@@ -275,4 +311,4 @@ if __name__ == '__main__':
 	#reactor.listenTCP(COMMAND_PORT, WorkHomeFactory())
 	reactor.run()
 	#reactor.run()
-	lc.stop
+	lc.stop()

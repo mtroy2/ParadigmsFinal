@@ -110,7 +110,11 @@ class Tank(pygame.sprite.Sprite):
 		self.turret.tick(self.rect.center)
 	def do_damage(self,damage):
 		self.health -= damage
-		print "OUCH! Health now = " + str(self.health)
+		if self.health <= 0:
+			if self.PLAYER == "PLAYER_1":
+				self.gs.state = PLAYER_1_DEAD
+			else:
+				self.gs.state = PLAYER_2_DEAD 
 	def click(self):
 		self.gs.create_bullet(self.rect.center,self.turret.angle)
 	def move(self, direction):
@@ -240,11 +244,10 @@ class Tank(pygame.sprite.Sprite):
 class Map(pygame.sprite.Sprite):
 	def __init__(self,gs=None):
 		self.gs = gs
-		ss = spritesheet.spritesheet(os.getcwd() + "/tiles/battleground.png")
 		pygame.sprite.Sprite.__init__(self)
-		self.image = ss.image_at((0,0,500,500))
+		self.image = pygame.image.load(os.getcwd() + "/tiles/battleground.png")
 		self.rect = self.image.get_rect()
-		self.rect.topleft = (0,100)
+
 class Obstacle(pygame.sprite.Sprite):
 	def __init__(self,center,code,gs=None):
 		self.gs = gs
@@ -316,41 +319,4 @@ class Bullet(pygame.sprite.Sprite):
 				self.dx = self.dx * -1
 		 	elif (self.rect.centery >= 600) or  (self.rect.centery <= 100):
 				self.dy = self.dy * -1
-class Title_screen(pygame.sprite.Sprite):
-	def __init__(self,gs=None):
-		self.image = pygame.image.load(os.getcwd() + "/screens/Title_screen.png")
-		self.rect = self.image.get_rect()
-		self.play_button = pygame.Rect(165,123,176,62)
-		self.info_button = pygame.Rect(167,206,176,62)
-		self.gs = gs
-		self.gs.screen.blit(self.image, self.rect)
-		self.current_state = True
-	#sets next game state on click
-	def click(self, click_point):
-		# click was in play button
-		if self.play_button.collidepoint(click_point):
-			if self.gs.state == WAITING_2:
-				self.gs.state = WAITING_1
-			elif self.gs.state == WAITING_1:
-				self.gs.state = PLAYING
-				self.current_state = False
-			self.gs.screen.fill ((0,0,0))
-			
-
-		elif self.info_button.collidepoint(click_point):
-			self.gs.state = INFO_SCREEN
-			self.current_state = False
-
-class Info_screen(pygame.sprite.Sprite):
-	def __init__(self, gs = None):
-		self.image = pygame.image.load(os.getcwd()+ "/screens/Info_screen.png")	
-		self.rect = self.image.get_rect()
-		self.return_button = pygame.Rect(322,0,129,35)
-		self.gs = gs
-		self.current_state = False
-	def click(self,click_point):
-		if self.return_button.collidepoint(click_point):
-			self.gs.state = TITLE_SCREEN	
-			
-			self.current_state = False	
 		
