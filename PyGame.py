@@ -49,7 +49,7 @@ class GameSpace:
 						"click": False}
 		
 		pygame.init()   
-
+		self.conns = []
 		# font to be used for any text displayed on screen
 		self.font = pygame.font.SysFont("monospace",15)
 
@@ -97,6 +97,7 @@ class GameSpace:
 	def lookupBinding(self,keyEntered):
 		for binding,keyBound in self.bindings.items():
 			if keyEntered == keyBound:
+				
 				return binding
 		return "not found"
 
@@ -137,6 +138,7 @@ class GameSpace:
 					self.waiting_text_state = 1
 			#Display appropriate message
 			if self.waiting_text_state == 1:
+				
 				self.screen.blit(self.waiting_text_1,(150,270))
 			elif self.waiting_text_state == 2:
 				self.screen.blit(self.waiting_text_2,(150,270))
@@ -213,7 +215,7 @@ class GameSpace:
 				binding = self.lookupBinding(event.key)
 				if binding != "not found":
 					self.inputState[binding] = False
-			# if mouse is pressed		
+			# idf mouse is pressed		
 			if event.type == MOUSEBUTTONDOWN:
 				#set click status to True
 				self.inputState["click"] = True
@@ -325,8 +327,10 @@ class GameSpace:
 
 class WorkHomeReceiver(LineReceiver):
 	def __init__(self,addr):
-		"""Constructor for Server running, servicing work connections on home machine"""
+		"""Constructor 
+	for Server running, servicing work connections on home machine"""
 
+	
 		self.addr = addr
 		print "Work<-->Home: Command Connection received from work: "
 

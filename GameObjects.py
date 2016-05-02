@@ -23,7 +23,10 @@ WAITING_FOR_PLAYER = 4
 PLAYING = 5
 PLAYER_1_DEAD = 6
 PLAYER_2_DEAD = 7
-
+TOP_LEFT = 0
+TOP_RIGHT = 1
+BOTTOM_RIGHT =2
+BOTTOM_LEFT = 3
 
 class Turret(pygame.sprite.Sprite):
 	def __init__(self,owner,gs=None):
@@ -110,17 +113,18 @@ class Tank(pygame.sprite.Sprite):
 	def move(self, direction):
 		collision_detected = 0
 
+		#going forwards
 		if direction == "up":
 			mask_point = None
+			# Check for bush collisions
 			for bush in self.gs.game_obstacles:
 				# if rectangles overlap
 				if self.rect.colliderect(bush.rect):
 					mask_point = pygame.sprite.collide_mask(self,bush)
 					if mask_point != None:
-						print "Rect width = " + str(self.rect.width) + " Rect height = " + str(self.rect.height)
-						print mask_point
 						collision_detected = 1
 						mask_y = mask_point[1]
+						mask_x = mask_point[0]
 			# no collision with bushes
 			if not mask_point:
 				# If hit a wall
@@ -130,23 +134,91 @@ class Tank(pygame.sprite.Sprite):
 					# set rect center to x,y 
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
-
+				# Otherwise move forward like normal
 				else:
 					self.currentx += self.dx
 					self.currenty -= self.dy
 					# set rect center to x,y 
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
-			# hit a bush
+			# mask overlap w/ a bush
 			else:
-				self.currentx -= self.dx
-				self.currenty += self.dy
+				#Top left quadrant
+				if (mask_y <= (self.rect.width/2) and mask_x <= (self.rect.width/2)):
+					coll_quadrant = TOP_LEFT
+				#Top right
+				elif (mask_y < (self.rect.width/2) and mask_x > (self.rect.width/2)):
+					coll_quadrant = TOP_RIGHT
+				#Bottom right
+				elif (mask_y >= (self.rect.width/2) and mask_x > (self.rect.width/2)):
+					coll_quadrant = BOTTOM_RIGHT
+				# bottom left
+				elif (mask_y >= (self.rect.width/2) and mask_x <= (self.rect.width/2)):
+					coll_quadrant = BOTTOM_LEFT
+
+
+				# Traveling towards top right of screen
+				if (self.dx   >=0) and (self.dy >=0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx += self.dx
+						self.currenty = self.currenty
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx -= self.dx
+						self.currenty += self.dy
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx = self.currentx
+						self.currenty -= self.dy
+					else:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+				#Traveling towards top left of screen
+				elif (self.dx <=0) and (self.dy >0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx -= self.dx
+						self.currenty += self.dy
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx += self.dx
+						self.currenty = self.currenty
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+					else:
+						self.currentx = self.currentx
+						self.currenty -= self.dy
+				# Bottom left of screen
+				elif (self.dx <0) and (self.dy <=0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx = self.currentx
+						self.currenty -= self.dy
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx += self.dx
+						self.currenty = self.currenty
+					else:						
+						self.currentx -= self.dx
+						self.currenty += self.dy
+				# Bottom right of screen
+				elif (self.dx >0) and (self.dy <0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx = self.currentx
+						self.currenty -= self.dy
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx -= self.dx
+						self.currenty += self.dy
+					else:
+						self.currentx += self.dx
+						self.currenty = self.currenty
 				# set rect center to x,y 
 				self.rect.centerx = self.currentx
 				self.rect.centery = self.currenty
 
 
-
+		#going in reverse
 		if direction == "down":
 			mask_point = None
 			for bush in self.gs.game_obstacles:
@@ -156,7 +228,9 @@ class Tank(pygame.sprite.Sprite):
 					if mask_point != None:
 						collision_detected = 1
 						mask_y = mask_point[1]
+						mask_x = mask_point[0]
 			if not mask_point:
+				# Wall collision
 				if (self.currentx - self.dx > 480) or (self.currentx  -self.dx <= 20) or (self.currenty +self.dy <=120) or (self.currenty +self.dy >= 570):
 					self.currentx += self.dx
 					self.currenty -= self.dy
@@ -176,9 +250,75 @@ class Tank(pygame.sprite.Sprite):
 			# found collision
 			else:
 				# collision on front of tank, we are going reverse, so keep going
+				#Top left quadrant
+				if (mask_y <= (self.rect.width/2) and mask_x <= (self.rect.width/2)):
+					coll_quadrant = TOP_LEFT
+				#Top right
+				elif (mask_y < (self.rect.width/2) and mask_x > (self.rect.width/2)):
+					coll_quadrant = TOP_RIGHT
+				#Bottom right
+				elif (mask_y >= (self.rect.width/2) and mask_x > (self.rect.width/2)):
+					coll_quadrant = BOTTOM_RIGHT
+				# bottom left
+				elif (mask_y >= (self.rect.width/2) and mask_x <= (self.rect.width/2)):
+					coll_quadrant = BOTTOM_LEFT
 
-				self.currentx += self.dx
-				self.currenty -= self.dy
+
+				# Traveling towards bottom left of screen
+				if (self.dx   >=0) and (self.dy >=0):
+					if coll_quadrant == TOP_LEFT:
+						self.currenty += self.dy
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx -= self.dx
+						self.currenty += self.dy
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx -=self.dx
+					else:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+				#Traveling towards bottom right
+				elif (self.dx <=0) and (self.dy >0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx -= self.dx
+						self.currenty += self.dy
+					elif coll_quadrant == TOP_RIGHT:
+						self.currenty +=self.dy
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+					else:
+						self.currentx -= self.dx
+				# Top right
+				elif (self.dx <0) and (self.dy <=0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx -= self.dx
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currenty +=self.dx
+					else:						
+						self.currentx -= self.dx
+						self.currenty += self.dy
+				#Top left
+				elif (self.dx >0) and (self.dy <0):
+					if coll_quadrant == TOP_LEFT:
+						self.currentx += self.dx
+						self.currenty -= self.dy
+					elif coll_quadrant == TOP_RIGHT:
+						self.currentx -= self.dx
+					elif coll_quadrant == BOTTOM_RIGHT:
+						self.currentx -= self.dx
+						self.currenty += self.dy
+					else:
+						self.currenty += self.dx
+
+
+
+
+
+
+
 				# set rect center to x,y 
 				self.rect.centerx = self.currentx
 				self.rect.centery = self.currenty
