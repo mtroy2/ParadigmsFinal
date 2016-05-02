@@ -106,6 +106,7 @@ class Tank(pygame.sprite.Sprite):
 		self.currentx = float(self.rect.centerx)
 		self.currenty = float(self.rect.centery)
 		self.health = 100
+		self.ammo = 5
 	def tick(self):
 		self.turret.tick(self.rect.center)
 	def do_damage(self,damage):
@@ -116,7 +117,11 @@ class Tank(pygame.sprite.Sprite):
 			else:
 				self.gs.state = PLAYER_2_DEAD 
 	def click(self):
-		self.gs.create_bullet(self.rect.center,self.turret.angle)
+		if self.ammo >0:
+			self.gs.create_bullet(self.rect.center,self.turret.angle)
+			self.ammo -= 1
+	def increase_ammo(self,amount):
+		self.ammo += amount	
 	def move(self, direction):
 		collision_detected = 0
 
@@ -319,4 +324,4 @@ class Bullet(pygame.sprite.Sprite):
 				self.dx = self.dx * -1
 		 	elif (self.rect.centery >= 600) or  (self.rect.centery <= 100):
 				self.dy = self.dy * -1
-		
+

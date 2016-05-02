@@ -78,6 +78,7 @@ class GameSpace:
 
 		self.waiting_text_state = 1
 		self.waiting_counter = 0.0
+		self.ammo_increase_counter = 0.0
 		self.waiting_text_1 = self.font.render("Waiting for other player.",1,(255,255,255))
 		self.waiting_text_2 = self.font.render("Waiting for other player..",1,(255,255,255))
 		self.waiting_text_3 = self.font.render("Waiting for other player...",1,(255,255,255))
@@ -132,7 +133,7 @@ class GameSpace:
 				sys.exit()
 			if event.type == MOUSEBUTTONUP:
 				mx,my = pygame.mouse.get_pos()
-				self.title_screen.click((mx,my))
+				self.info_screen.click((mx,my))
 	def title_menu(self):
 		self.screen.fill((0,0,0))
 		self.screen.blit(self.title_screen.image,self.title_screen.rect)
@@ -160,6 +161,12 @@ class GameSpace:
 				self.title_screen.click((mx,my))
 	def active_game(self):
 		#5 user input reading from queue
+		self.ammo_increase_counter += 1./60
+		if self.ammo_increase_counter >= 10.0:
+			self.ammo_increase_counter = 0.
+			self.players[0].increase_ammo(1)
+			self.players[1].increase_ammo(1)
+			self.show_ammo()
 		for event in pygame.event.get():
 			#exit if X is pressed
 			if event.type == QUIT:
@@ -183,6 +190,7 @@ class GameSpace:
 				
 			if event.type == MOUSEBUTTONUP:	
 				self.players[0].click()
+				self.show_ammo()
 		#6 tick updating
 		for event, status in self.inputState.items():
 			# loop through dict, if the status of that button is True (pressed)
@@ -207,7 +215,8 @@ class GameSpace:
 		for bullet in self.bullets:
 			bullet.tick()
 			self.screen.blit(bullet.image,bullet.rect)
-
+		self.draw_health_bars()	
+		self.show_ammo()
 		# Draw bounding boxes
 		#pygame.draw.polygon(self.screen,(0,0,0),[self.players[0].rect.topleft,
 		#	self.players[0].rect.topright,self.players[0].rect.bottomright,self.players[0].rect.bottomleft], 1)
@@ -215,7 +224,14 @@ class GameSpace:
 
 
 
-
+	def draw_health_bars(self):
+		pygame.draw.rect(self.screen,(255,0,0),(102,36,self.players[0].health,14))
+		pygame.draw.rect(self.screen,(255,0,0),(345,36,self.players[1].health,14))
+	def show_ammo(self):
+		player_1_ammo = self.font.render(str(self.players[0].ammo),1,(255,255,255))
+		player_2_ammo = self.font.render(str(self.players[1].ammo),1,(255,255,255))
+		self.screen.blit(player_1_ammo, (85,64))
+		self.screen.blit(player_2_ammo, (332,63))
 	def delete_bullet(self,objectID):
 		# look for object in game objects, if found, remove from list
 		index = 0
