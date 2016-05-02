@@ -359,7 +359,7 @@ class WorkHomeFactory(Factory):
 if __name__ == '__main__':
 	gs = GameSpace()
 	lc = LoopingCall(gs.main)
-	lc.start(1/60)
+	lc.start(1/5)
 
 	#reactor.listenTCP(COMMAND_PORT, WorkHomeFactory())
 	reactor.run()

@@ -85,7 +85,7 @@ class Tank(pygame.sprite.Sprite):
 		self.turret.assign_center((center[0],center[1]+10))
 		self.mask = pygame.mask.from_surface(self.image)
 		self.angle = math.radians(270)
-		self.speed = 1
+		self.speed = .5
 		self.dy =  math.sin(self.angle) * self.speed
 		self.dx = math.cos(self.angle) * self.speed
 		self.currentx = float(self.rect.centerx)
@@ -117,11 +117,13 @@ class Tank(pygame.sprite.Sprite):
 				if self.rect.colliderect(bush.rect):
 					mask_point = pygame.sprite.collide_mask(self,bush)
 					if mask_point != None:
+						print "Rect width = " + str(self.rect.width) + " Rect height = " + str(self.rect.height)
 						print mask_point
 						collision_detected = 1
 						mask_y = mask_point[1]
 			# no collision with bushes
 			if not mask_point:
+				# If hit a wall
 				if (self.currentx + self.dx > 480) or (self.currentx + self.dx <= 20) or (self.currenty -self.dy <=120) or (self.currenty -self.dy >= 570):
 					self.currentx -= self.dx
 					self.currenty += self.dy
@@ -137,20 +139,11 @@ class Tank(pygame.sprite.Sprite):
 					self.rect.centery = self.currenty
 			# hit a bush
 			else:
-				# collision on the back of the tank while going forward (OK)
-				if mask_y < 25:
-					self.currentx += self.dx
-					self.currenty -= self.dy
-					# set rect center to x,y 
-					self.rect.centerx = self.currentx
-					self.rect.centery = self.currenty
-
-				else:
-					self.currentx -= self.dx
-					self.currenty += self.dy
-					# set rect center to x,y 
-					self.rect.centerx = self.currentx
-					self.rect.centery = self.currenty
+				self.currentx -= self.dx
+				self.currenty += self.dy
+				# set rect center to x,y 
+				self.rect.centerx = self.currentx
+				self.rect.centery = self.currenty
 
 
 
@@ -183,21 +176,12 @@ class Tank(pygame.sprite.Sprite):
 			# found collision
 			else:
 				# collision on front of tank, we are going reverse, so keep going
-		
-				if mask_point[1] > 25:
-					self.currentx -= self.dx
-					self.currenty += self.dy
-					# set rect center to x,y 
-					self.rect.centerx = self.currentx
-					self.rect.centery = self.currenty
 
-
-				else:
-					self.currentx += self.dx
-					self.currenty -= self.dy
-					# set rect center to x,y 
-					self.rect.centerx = self.currentx
-					self.rect.centery = self.currenty
+				self.currentx += self.dx
+				self.currenty -= self.dy
+				# set rect center to x,y 
+				self.rect.centerx = self.currentx
+				self.rect.centery = self.currenty
 
 		self.turret.rect.centerx = self.currentx
 		self.turret.rect.centery = self.currenty
@@ -268,7 +252,7 @@ class Bullet(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect()
 		self.rect.center = center
 		self.angle = angle
-		self.speed = 2.5
+		self.speed = 1.5
 		self.dy =  math.sin(self.angle) * self.speed
 		self.dx = math.cos(self.angle) * self.speed
 		self.dist_per_tick = math.sqrt( math.fabs(self.dx)*math.fabs(self.dx) + math.fabs(self.dy)*math.fabs(self.dy))
