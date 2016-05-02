@@ -85,7 +85,7 @@ class Tank(pygame.sprite.Sprite):
 		self.turret.assign_center((center[0],center[1]+10))
 		self.mask = pygame.mask.from_surface(self.image)
 		self.angle = math.radians(270)
-		self.speed = .5
+		self.speed = 1
 		self.dy =  math.sin(self.angle) * self.speed
 		self.dx = math.cos(self.angle) * self.speed
 		self.currentx = float(self.rect.centerx)
@@ -117,28 +117,25 @@ class Tank(pygame.sprite.Sprite):
 				if self.rect.colliderect(bush.rect):
 					mask_point = pygame.sprite.collide_mask(self,bush)
 					if mask_point != None:
-						print "Mask overlap"
+						print mask_point
 						collision_detected = 1
 						mask_y = mask_point[1]
 			# no collision with bushes
 			if not mask_point:
-				if (self.currentx + self.dx > 500) or (self.currentx + self.dx <= 0) or (self.currenty -self.dy <=100) or (self.currenty -self.dy >= 600):
+				if (self.currentx + self.dx > 480) or (self.currentx + self.dx <= 20) or (self.currenty -self.dy <=120) or (self.currenty -self.dy >= 570):
 					self.currentx -= self.dx
 					self.currenty += self.dy
 					# set rect center to x,y 
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
 
-					self.turret.rect.centerx = self.currentx
-					self.turret.rect.centery = self.currenty
 				else:
 					self.currentx += self.dx
 					self.currenty -= self.dy
 					# set rect center to x,y 
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
-					self.turret.rect.centerx = self.currentx
-					self.turret.rect.centery = self.currenty
+			# hit a bush
 			else:
 				# collision on the back of the tank while going forward (OK)
 				if mask_y < 25:
@@ -148,8 +145,6 @@ class Tank(pygame.sprite.Sprite):
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
 
-					self.turret.rect.centerx = self.currentx
-					self.turret.rect.centery = self.currenty
 				else:
 					self.currentx -= self.dx
 					self.currenty += self.dy
@@ -157,8 +152,8 @@ class Tank(pygame.sprite.Sprite):
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
 
-					self.turret.rect.centerx = self.currentx
-					self.turret.rect.centery = self.currenty
+
+
 		if direction == "down":
 			mask_point = None
 			for bush in self.gs.game_obstacles:
@@ -169,14 +164,22 @@ class Tank(pygame.sprite.Sprite):
 						collision_detected = 1
 						mask_y = mask_point[1]
 			if not mask_point:
-				self.currentx -= self.dx
-				self.currenty += self.dy
-				# set rect center to x,y 
-				self.rect.centerx = self.currentx
-				self.rect.centery = self.currenty
+				if (self.currentx - self.dx > 480) or (self.currentx  -self.dx <= 20) or (self.currenty +self.dy <=120) or (self.currenty +self.dy >= 570):
+					self.currentx += self.dx
+					self.currenty -= self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
 
-				self.turret.rect.centerx = self.currentx
-				self.turret.rect.centery = self.currenty
+				else:
+					self.currentx -= self.dx
+					self.currenty += self.dy
+					# set rect center to x,y 
+					self.rect.centerx = self.currentx
+					self.rect.centery = self.currenty
+
+			
+
 			# found collision
 			else:
 				# collision on front of tank, we are going reverse, so keep going
@@ -188,8 +191,6 @@ class Tank(pygame.sprite.Sprite):
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
 
-					self.turret.rect.centerx = self.currentx
-					self.turret.rect.centery = self.currenty
 
 				else:
 					self.currentx += self.dx
@@ -198,8 +199,8 @@ class Tank(pygame.sprite.Sprite):
 					self.rect.centerx = self.currentx
 					self.rect.centery = self.currenty
 
-				self.turret.rect.centerx = self.currentx
-				self.turret.rect.centery = self.currenty
+		self.turret.rect.centerx = self.currentx
+		self.turret.rect.centery = self.currenty
 	def rotate(self,direction):
 		if direction == "left":
 			oldCenter = self.rect.center		# if rectangles overlap
@@ -267,9 +268,9 @@ class Bullet(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect()
 		self.rect.center = center
 		self.angle = angle
-		self.velocity = 1
-		self.dy =  math.sin(self.angle) * self.velocity
-		self.dx = math.cos(self.angle) * self.velocity
+		self.speed = 2.5
+		self.dy =  math.sin(self.angle) * self.speed
+		self.dx = math.cos(self.angle) * self.speed
 		self.dist_per_tick = math.sqrt( math.fabs(self.dx)*math.fabs(self.dx) + math.fabs(self.dy)*math.fabs(self.dy))
         # these two handle the fact that you can't update an image by less than 1 pixel
         # they keep track of the running total of movement, as floats
