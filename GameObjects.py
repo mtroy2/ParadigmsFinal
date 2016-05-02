@@ -25,21 +25,6 @@ PLAYER_1_DEAD = 6
 PLAYER_2_DEAD = 7
 
 
-class Walls(pygame.sprite.Sprite):
-	def __init__(self,gs=None):
-		self.NAME = "WALLS"
-		self.walls = pygame.sprite.Group()
-		ss = spritesheet.spritesheet(os.getcwd() + "/tiles/walls.png")
-		pygame.sprite.Sprite.__init__(self)
-		#self.image = ss.image_at((0,0,455,500))
-		self.wall1 = ss.image_at((0,0,455,14))
-		self.image = ss.image_at((117,35,73,40))
-		self.image.set_colorkey((0,0,0))
-		self.rect = self.image.get_rect()
-		self.mask = pygame.mask.from_surface(self.image) # pixel mask for collision detection
-	def tick(self):
-		pass
-
 class Turret(pygame.sprite.Sprite):
 	def __init__(self,owner,gs=None):
 		self.gs = gs

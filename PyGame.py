@@ -31,7 +31,7 @@ WAITING_FOR_PLAYER = 4
 PLAYING = 5
 PLAYER_1_DEAD = 6
 PLAYER_2_DEAD = 7
-
+EXIT_GAME = 8
 class GameSpace:
 	def __init__(self):
 		# init game
@@ -41,7 +41,7 @@ class GameSpace:
 						"right": pygame.K_RIGHT,
 						"left": pygame.K_LEFT,
 						"click": pygame.MOUSEBUTTONDOWN}
-		# Dict of key to its curernt state
+		# Dict of key to its current state
 		self.inputState = {"up": False,
 						"down": False,
 						"right": False,
@@ -49,18 +49,23 @@ class GameSpace:
 						"click": False}
 		
 		pygame.init()   
-		# Each game object has a unique ID, Player and Enemy start at 0 and 1, respectively
+
+		# font to be used for any text displayed on screen
 		self.font = pygame.font.SysFont("monospace",15)
+
 		self.bulletID = 1
 		self.size = self.width,self.height = 500,700
 		self.screen = pygame.display.set_mode(self.size)
 		self.map = Map(self)
-		#7
+	
+		# start state of server
 		self.state = WAITING_2
 
+		# init screens
 		self.info_screen = Info_screen(self)
 		self.title_screen = Title_screen(self)
 		self.win_screen = Win_screen(self)
+
 		# initialize game objects
 		self.game_objects = []
 		self.game_obstacles=[]
@@ -70,20 +75,24 @@ class GameSpace:
 		self.turret2 = Turret("PLAYER_2",self)
 		self.player1 = Tank(self.turret1, "PLAYER_1",(50,150),self)
 		self.player2 = Tank(self.turret2, "PLAYER_2", (400,500),self)
-		self.walls = Walls(self)
-		#self.gameObjects.append(self.walls)
+
 		self.players.append(self.player1)
 		self.players.append(self.player2)
+		# make all bushes on screen
 		self.create_obstacles()
 
-		self.waiting_text_state = 1
+		# game counters
 		self.waiting_counter = 0.0
 		self.ammo_increase_counter = 0.0
+	
+		# Text to be displayed on screen
+		self.waiting_text_state = 1
 		self.waiting_text_1 = self.font.render("Waiting for other player.",1,(255,255,255))
 		self.waiting_text_2 = self.font.render("Waiting for other player..",1,(255,255,255))
 		self.waiting_text_3 = self.font.render("Waiting for other player...",1,(255,255,255))
 		self.p1_win_text = self.font.render("PLAYER 1 WINS!",1,(255,255,255))
 		self.p2_win_text = self.font.render("PLAYER 2 WINS!",1,(255,255,255))
+
 	# given a key, lookup the event for it	
 	def lookupBinding(self,keyEntered):
 		for binding,keyBound in self.bindings.items():
@@ -93,7 +102,7 @@ class GameSpace:
 
 
 	def main(self):
-	
+		# Main switches based on current state of game
 		if self.state == TITLE_SCREEN or self.state == WAITING_1 or self.state == WAITING_2:
 			self.title_menu()
 			pygame.display.flip()
@@ -107,43 +116,26 @@ class GameSpace:
 		elif self.state == PLAYER_1_DEAD or self.state == PLAYER_2_DEAD:
 			self.win_menu()
 			pygame.display.flip()
-
-	def win_menu(self):
+		else:
+			pygame.quit()
 	
-		if self.win_screen.current_state == False:
-			self.screen.fill((0,0,0))
-			self.win_screen.current_state = True
-			self.screen.blit(self.win_screen.image, self.win_screen.rect)
-			if self.state == PLAYER_1_DEAD:
-				self.screen.blit(self.p2_win_text, (20,37))
-			else:
-				self.screen.blit(self.p1_win_text, (20,37))
-		for event in pygame.event.get():
-			if event.type == QUIT:
-				self.state = WAITING_2
-			if event.type == MOUSEBUTTONUP:
-				mx,my = pygame.mouse.get_pos()
-				self.win_screen.click((mx,my))
-	def info_menu(self):
-		if self.info_screen.current_state == False:
-			self.info_screen.current_state = True
-			self.screen.blit(self.info_screen.image,self.info_screen.rect)
-		for event in pygame.event.get():	
-			if event.type == QUIT:
-				sys.exit()
-			if event.type == MOUSEBUTTONUP:
-				mx,my = pygame.mouse.get_pos()
-				self.info_screen.click((mx,my))
 	def title_menu(self):
+		#Black background
 		self.screen.fill((0,0,0))
+		# Load image
 		self.screen.blit(self.title_screen.image,self.title_screen.rect)
+
+		# Switch behaviour based on state
 		if self.state == WAITING_1:
+
+			# Animate Waiting message (either "Waiting for other player." "Waiting for other player.." or "Waiting of other player...")
 			self.waiting_counter += 1./60
 			if self.waiting_counter >= 0.5:
 				self.waiting_counter = 0
 				self.waiting_text_state += 1
 				if self.waiting_text_state ==4:
 					self.waiting_text_state = 1
+			#Display appropriate message
 			if self.waiting_text_state == 1:
 				self.screen.blit(self.waiting_text_1,(150,270))
 			elif self.waiting_text_state == 2:
@@ -157,22 +149,61 @@ class GameSpace:
 			if event.type == QUIT:
 				sys.exit()
 			if event.type == MOUSEBUTTONUP:
+				# run pass in location to title_screen object - run click method
 				mx,my = pygame.mouse.get_pos()
 				self.title_screen.click((mx,my))
+	def info_menu(self):
+		#There is basically the same behaviour for every menu in the game
+		# Wait for click, on click, run click function in object.
+		# Everything related to state switching is inside those objects
+
+		# only need to blit this once
+		if self.info_screen.current_state == False:
+			self.info_screen.current_state = True
+			self.screen.blit(self.info_screen.image,self.info_screen.rect)
+		
+		for event in pygame.event.get():	
+			if event.type == QUIT:
+				sys.exit()
+			if event.type == MOUSEBUTTONUP:
+				mx,my = pygame.mouse.get_pos()
+				self.info_screen.click((mx,my))
+
+	def win_menu(self):
+	
+		if self.win_screen.current_state == False:
+			self.screen.fill((0,0,0))
+			self.win_screen.current_state = True
+			self.screen.blit(self.win_screen.image, self.win_screen.rect)
+			# Display one of two win messages
+			if self.state == PLAYER_1_DEAD:
+				self.screen.blit(self.p2_win_text, (20,37))
+			else:
+				self.screen.blit(self.p1_win_text, (20,37))
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				sys.exit()
+			if event.type == MOUSEBUTTONUP:
+				mx,my = pygame.mouse.get_pos()
+				self.win_screen.click((mx,my))
+
+
 	def active_game(self):
-		#5 user input reading from queue
+		# -Mason, right now I default all action to run through P1. When the server is implemented, We'll need a way to differentiate btwn them and send the command to the appropriate player object
+
+		# Each player gets +1 ammo every 10 seconds
 		self.ammo_increase_counter += 1./60
 		if self.ammo_increase_counter >= 10.0:
 			self.ammo_increase_counter = 0.
 			self.players[0].increase_ammo(1)
 			self.players[1].increase_ammo(1)
 			self.show_ammo()
+
 		for event in pygame.event.get():
 			#exit if X is pressed
 			if event.type == QUIT:
 				sys.exit()
-			# if anyile "PyGame.py", line 9 key is pressed, look it up,
-			# if it is one of the mapped keys, make its pressed status true
+		
 			if event.type == KEYDOWN:
 				binding = self.lookupBinding(event.key)
 				if binding != "not found":
@@ -187,11 +218,14 @@ class GameSpace:
 				#set click status to True
 				self.inputState["click"] = True
 
-				
+			# on click , fire		
 			if event.type == MOUSEBUTTONUP:	
+			
 				self.players[0].click()
 				self.show_ammo()
 		#6 tick updating
+
+		# Handle tank mvt
 		for event, status in self.inputState.items():
 			# loop through dict, if the status of that button is True (pressed)
 			if status:
@@ -201,25 +235,27 @@ class GameSpace:
 					self.players[0].move(event)
 				elif event == "left" or event == "right":
 					self.players[0].rotate(event)
+
+		# Redraw all objects on screen
 		self.screen.fill((0,0,0))
 		# redraw map
 		self.screen.blit(self.map.image, self.map.rect)
 		#redraw bushes
 		for bush in self.game_obstacles:
 			self.screen.blit(bush.image, bush.rect)
-
+		# tick player, and redraw
 		for player in self.players:
 			player.tick()
 			self.screen.blit(player.image, player.rect)
 			self.screen.blit(player.turret.image, player.turret.rect)
+		#Tick bullets, and redraw
 		for bullet in self.bullets:
 			bullet.tick()
 			self.screen.blit(bullet.image,bullet.rect)
+		# Draw ammo and health
 		self.draw_health_bars()	
 		self.show_ammo()
-		# Draw bounding boxes
-		#pygame.draw.polygon(self.screen,(0,0,0),[self.players[0].rect.topleft,
-		#	self.players[0].rect.topright,self.players[0].rect.bottomright,self.players[0].rect.bottomleft], 1)
+
 		pygame.display.flip()
 
 
@@ -246,7 +282,7 @@ class GameSpace:
 	
 
 	def create_obstacles(self):
-		
+		#Randomly make 8 bushes, make them such that they can't box in a player in the corner
 		for i in range(0,8):
 			rand_x = random.randint(120,380)
 			rand_y = random.randint(150,480)
@@ -262,7 +298,8 @@ class GameSpace:
 
 	def create_bullet(self, center, angle):
 		# calculate initial point of bullet
-		dy =  math.sin(angle) * 26
+		
+		dy =  math.sin(angle) * 26 #26 is length of barrel
 		dx = math.cos(angle) * 26
 		new_center = (center[0]+ dx,center[1]-dy)
 		bullet = Bullet(new_center, angle, self.bulletID, self)
@@ -271,6 +308,7 @@ class GameSpace:
 		self.bulletID += 1	
 
 	def reset(self):
+		# Reset all game objects in preparation for new game
 		del self.game_objects[:]
 		del self.game_obstacles[:]
 		del self.bullets[:]
@@ -280,7 +318,6 @@ class GameSpace:
 		self.turret2 = Turret("PLAYER_2",self)
 		self.player1 = Tank(self.turret1, "PLAYER_1",(50,150),self)
 		self.player2 = Tank(self.turret2, "PLAYER_2", (400,500),self)
-		self.walls = Walls(self)
 		#self.gameObjects.append(self.walls)
 		self.players.append(self.player1)
 		self.players.append(self.player2)
