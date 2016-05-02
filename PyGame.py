@@ -33,7 +33,7 @@ PLAYER_1_DEAD = 6
 PLAYER_2_DEAD = 7
 EXIT_GAME = 8
 class GameSpace:
-	def __init__(self):
+	def __init__(self, context):
 		# init game
 		# dict of key_pressed to SDL event triggered
 		self.bindings = {"up": pygame.K_UP,
@@ -48,7 +48,15 @@ class GameSpace:
 						"left": False,
 						"click": False}
 		
-		pygame.init()   
+
+		# Connection initialization
+		self.context = context
+		if (self.context == "server"):
+			self.conns = []
+		self.dq = DeferredQueue()
+		
+
+		pygame.init()
 
 		# font to be used for any text displayed on screen
 		self.font = pygame.font.SysFont("monospace",15)
@@ -67,7 +75,6 @@ class GameSpace:
 		self.win_screen = Win_screen(self)
 
 		# initialize game objects
-		self.game_objects = []
 		self.game_obstacles=[]
 		self.bullets = []
 		self.players = []
@@ -189,74 +196,80 @@ class GameSpace:
 
 
 	def active_game(self):
-		# -Mason, right now I default all action to run through P1. When the server is implemented, We'll need a way to differentiate btwn them and send the command to the appropriate player object
+		if self.context == "server":
+			# Each player gets +1 ammo every 5 seconds
+			self.ammo_increase_counter += 1./30
+			if self.ammo_increase_counter >= 10.0:
+				self.ammo_increase_counter = 0.
+				self.players[0].increase_ammo(1)
+				self.players[1].increase_ammo(1)
+				self.show_ammo()
 
-		# Each player gets +1 ammo every 10 seconds
-		self.ammo_increase_counter += 1./60
-		if self.ammo_increase_counter >= 10.0:
-			self.ammo_increase_counter = 0.
-			self.players[0].increase_ammo(1)
-			self.players[1].increase_ammo(1)
+			# Pull events off DeferredQueue and process
+			obj = self.dq.get()
+			while obj:
+				player = obj["player"]
+				event = obj["event"]
+				#exit if X is pressed
+				if event.type == QUIT:
+					sys.exit()
+		
+				if event.type == KEYDOWN:
+					binding = self.lookupBinding(event.key)
+					if binding != "not found":
+						self.inputState[binding] = True
+				# If any key is released, and it is mapped, make its pressed status false		
+				if event.type == KEYUP:
+					binding = self.lookupBinding(event.key)
+					if binding != "not found":
+						self.inputState[binding] = False
+				# if mouse is pressed		
+				if event.type == MOUSEBUTTONDOWN:
+					#set click status to True
+					self.inputState["click"] = True
+
+				# on click , fire		
+				if event.type == MOUSEBUTTONUP:	
+					self.players[player-1].click()
+					self.show_ammo()
+
+			# Handle tank mvt
+			for event, status in self.inputState.items():
+				# loop through dict, if the status of that button is True (pressed)
+				if status:
+					# on click, run click function in player
+					if event == "up" or event == "down":
+						# otherwise, it's a movement. Run move function
+						self.players[player-1].move(event)
+					elif event == "left" or event == "right":
+						self.players[player-1].rotate(event)
+
+			# Redraw all objects on screen
+			self.screen.fill((0,0,0))
+			# redraw map
+			self.screen.blit(self.map.image, self.map.rect)
+			#redraw bushes
+			for bush in self.game_obstacles:
+				self.screen.blit(bush.image, bush.rect)
+			# tick player, and redraw		# Players should tick themselves from client side
+			for player in self.players:
+				player.tick()
+				self.screen.blit(player.image, player.rect)
+				self.screen.blit(player.turret.image, player.turret.rect)
+			#Tick bullets, and redraw		# Bullets should be ticked from server
+			for bullet in self.bullets:
+				bullet.tick()
+				self.screen.blit(bullet.image,bullet.rect)
+			# Draw ammo and health
+			self.draw_health_bars()	
 			self.show_ammo()
 
-		for event in pygame.event.get():
-			#exit if X is pressed
-			if event.type == QUIT:
-				sys.exit()
-		
-			if event.type == KEYDOWN:
-				binding = self.lookupBinding(event.key)
-				if binding != "not found":
-					self.inputState[binding] = True
-			# If any key is released, and it is mapped, make its pressed status false		
-			if event.type == KEYUP:
-				binding = self.lookupBinding(event.key)
-				if binding != "not found":
-					self.inputState[binding] = False
-			# if mouse is pressed		
-			if event.type == MOUSEBUTTONDOWN:
-				#set click status to True
-				self.inputState["click"] = True
+			pygame.display.flip()
 
-			# on click , fire		
-			if event.type == MOUSEBUTTONUP:	
-			
-				self.players[0].click()
-				self.show_ammo()
-		#6 tick updating
-
-		# Handle tank mvt
-		for event, status in self.inputState.items():
-			# loop through dict, if the status of that button is True (pressed)
-			if status:
-				# on click, run click function in player
-				if event == "up" or event == "down":
-					# otherwise, it's a movement. Run move function
-					self.players[0].move(event)
-				elif event == "left" or event == "right":
-					self.players[0].rotate(event)
-
-		# Redraw all objects on screen
-		self.screen.fill((0,0,0))
-		# redraw map
-		self.screen.blit(self.map.image, self.map.rect)
-		#redraw bushes
-		for bush in self.game_obstacles:
-			self.screen.blit(bush.image, bush.rect)
-		# tick player, and redraw
-		for player in self.players:
-			player.tick()
-			self.screen.blit(player.image, player.rect)
-			self.screen.blit(player.turret.image, player.turret.rect)
-		#Tick bullets, and redraw
-		for bullet in self.bullets:
-			bullet.tick()
-			self.screen.blit(bullet.image,bullet.rect)
-		# Draw ammo and health
-		self.draw_health_bars()	
-		self.show_ammo()
-
-		pygame.display.flip()
+		else:
+			# Client: get events off pygame's queue & send to server
+			for event in pygame.event.get():
+				self.conn.sendEvent(event)
 
 
 
@@ -309,7 +322,6 @@ class GameSpace:
 
 	def reset(self):
 		# Reset all game objects in preparation for new game
-		del self.game_objects[:]
 		del self.game_obstacles[:]
 		del self.bullets[:]
 		del self.players[:]
