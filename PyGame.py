@@ -47,6 +47,7 @@ class GameSpace:
 						"right": False,
 						"left": False,
 						"click": False}
+<<<<<<< HEAD
 		
 
 		# Connection initialization
@@ -58,6 +59,11 @@ class GameSpace:
 
 		pygame.init()
 
+=======
+		
+		pygame.init()   
+		self.conns = []
+>>>>>>> 349a47346bfc4b9b596bbcb107ab09738ef09d75
 		# font to be used for any text displayed on screen
 		self.font = pygame.font.SysFont("monospace",15)
 
@@ -104,6 +110,7 @@ class GameSpace:
 	def lookupBinding(self,keyEntered):
 		for binding,keyBound in self.bindings.items():
 			if keyEntered == keyBound:
+				
 				return binding
 		return "not found"
 
@@ -144,6 +151,7 @@ class GameSpace:
 					self.waiting_text_state = 1
 			#Display appropriate message
 			if self.waiting_text_state == 1:
+				
 				self.screen.blit(self.waiting_text_1,(150,270))
 			elif self.waiting_text_state == 2:
 				self.screen.blit(self.waiting_text_2,(150,270))
@@ -214,6 +222,7 @@ class GameSpace:
 				if event.type == QUIT:
 					sys.exit()
 		
+<<<<<<< HEAD
 				if event.type == KEYDOWN:
 					binding = self.lookupBinding(event.key)
 					if binding != "not found":
@@ -227,6 +236,21 @@ class GameSpace:
 				if event.type == MOUSEBUTTONDOWN:
 					#set click status to True
 					self.inputState["click"] = True
+=======
+			if event.type == KEYDOWN:
+				binding = self.lookupBinding(event.key)
+				if binding != "not found":
+					self.inputState[binding] = True
+			# If any key is released, and it is mapped, make its pressed status false		
+			if event.type == KEYUP:
+				binding = self.lookupBinding(event.key)
+				if binding != "not found":
+					self.inputState[binding] = False
+			# idf mouse is pressed		
+			if event.type == MOUSEBUTTONDOWN:
+				#set click status to True
+				self.inputState["click"] = True
+>>>>>>> 349a47346bfc4b9b596bbcb107ab09738ef09d75
 
 				# on click , fire		
 				if event.type == MOUSEBUTTONUP:	
@@ -337,8 +361,10 @@ class GameSpace:
 
 class WorkHomeReceiver(LineReceiver):
 	def __init__(self,addr):
-		"""Constructor for Server running, servicing work connections on home machine"""
+		"""Constructor 
+	for Server running, servicing work connections on home machine"""
 
+	
 		self.addr = addr
 		print "Work<-->Home: Command Connection received from work: "
 
@@ -371,7 +397,7 @@ class WorkHomeFactory(Factory):
 if __name__ == '__main__':
 	gs = GameSpace()
 	lc = LoopingCall(gs.main)
-	lc.start(1/60)
+	lc.start(1/5)
 
 	#reactor.listenTCP(COMMAND_PORT, WorkHomeFactory())
 	reactor.run()
