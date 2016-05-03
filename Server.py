@@ -8,24 +8,28 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue
 from twisted.internet.task import LoopingCall
 from PyGame import GameSpace
-
+from GameConstants import *
 SERVER_PORT = 9000
 
 class ServerConn(Protocol):
-	def __init__(self, addr, gamestate, loop):
-		gamestate.conns.append(self)
+	def __init__(self, addr, game_state, num_cons, users):
 		self.addr = addr
-		self.gs = gamestate
-		self.lc = loop
-		if (len(gamestate.conns) == 1):
-			self.player = 1
-		else:
-			self.player = 2
-			print 'Ready to play!'
-			self.gs.state = 5 # PLAYING
+		self.gs = game_state
+		self.num_conns = num_cons
+		self.users = users
+
+
 
 	def connectionMade(self):
 		print 'new connection from', self.addr
+		self.num_conns += 1
+		print "Number of active connections = " +str(self.num_conns)
+		if self.num_conns == 1:
+			line = "GOTO_WAITING_1" + "\n"
+			self.transport.write(line)
+		else:
+			line = "GOTO_INFO"
+			self.transport.write(line)
 
 	def dataReceived(self, data):
 		info = pickle.loads(data)
@@ -34,10 +38,7 @@ class ServerConn(Protocol):
 	def connectionLost(self, reason):
 		print 'connection from', self.addr, 'lost:', reason
 		print 'Player left the game, waiting for new player'
-		self.gs.conns.remove(self)
-		if (len(self.gs.conns) > 0):
-			self.gs.conns[0].player = 1
-		self.gs.state = 0 # TITLE_SCREEN
+
 
 	def updateGameState(self, player_info, bullet_info):
 		data = {}
@@ -55,17 +56,17 @@ class ServerConn(Protocol):
 		#						
 
 class ServerConnFactory(Factory):
-	def __init__(self, gamestate, loop):
+	def __init__(self, gamestate):
+		self.num_connections = 0
+		self.users = {} # maps user names to Chat instances
 		self.gs = gamestate
-		self.lc = loop
 
 	def buildProtocol(self, addr):
-		return ServerConn(addr, self.gs, self.lc)
+		return ServerConn(addr, self.gs, self.num_connections, self.users)
 
 
 if __name__ == '__main__':
-	gs = GameSpace("server")
-	lc = LoopingCall(gs.main)
-	lc.start(1/60)
-	reactor.listenTCP(SERVER_PORT, ServerConnFactory(gs, lc))
+	gs = GameSpace()
+
+	reactor.listenTCP(SERVER_PORT, ServerConnFactory(gs))
 	reactor.run()

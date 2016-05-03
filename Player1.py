@@ -12,16 +12,15 @@ from GameConstants import *
 
 
 class ClientConn(Protocol):
-	def __init__(self, gamestate, dummy1, dummy2, dummy3):
-		gamestate.conn = self
+	def __init__(self, gamestate):
 		self.gs = gamestate
-		self.gs
+		self.name = "PLAYER_1"
 
 	def connectionMade(self):
 		print 'successfully connected to', SERVER_HOST, 'port', SERVER_PORT
 
 	def dataReceived(self, data):
-		info = pickle.loads(data)
+		#info = pickle.loads(data)
 		#self.gs.players = info["players"]
 		#self.gs.bullets = info["bullets"]
 		print 'data received:', data
@@ -42,7 +41,7 @@ class ClientConnFactory(ClientFactory):
 		self.gs = gamestate
 
 	def buildProtocol(self, addr):
-		return ClientConn(self.gs, "dummy", "dummy", "dummy")
+		return ClientConn(self.gs)
 
 class Player:
 	def __init__(self,gs=None,player=None):
@@ -189,7 +188,7 @@ class Player:
 	
 if __name__ == '__main__':
 
-	gs = GameSpace("client")
+	gs = GameSpace()
 	Player = Player("PLAYER_1",gs)
 	lc = LoopingCall(Player.main)
 	lc.start(1/10)
