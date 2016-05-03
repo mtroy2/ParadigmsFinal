@@ -34,22 +34,17 @@ class Title_screen(pygame.sprite.Sprite):
 	def click(self, click_point):
 		# click was in play button
 		if self.play_button.collidepoint(click_point):
-			if self.gs.state == WAITING_2:
+			if self.gs.state == TITLE_SCREEN:
 				self.gs.connect_to_server()
-				self.gs.state = WAITING_1
-			elif self.gs.state == WAITING_1:
-				self.gs.show_ammo()
-				self.gs.state = PLAYING
-				self.current_state = False
-			self.gs.screen.fill ((0,0,0))
-			
+		elif self.exit_button.collidepoint(click_point):
+			self.gs.state = EXIT_GAME	
+		# Paralyze all buttons after play button is pressed	
 
 		elif self.info_button.collidepoint(click_point):
-			
-			self.gs.state = INFO_SCREEN
-			self.current_state = False
-		elif self.exit_button.collidepoint(click_point):
-			self.gs.state = EXIT_GAME
+			if self.gs.state != WAITING_1:
+				self.gs.state = INFO_SCREEN
+				self.current_state = False
+
 class Info_screen(pygame.sprite.Sprite):
 	def __init__(self, gs = None):
 		self.image = pygame.image.load(os.getcwd()+ "/screens/Info_screen.png")	

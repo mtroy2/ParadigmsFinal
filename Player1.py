@@ -13,15 +13,25 @@ from GameConstants import *
 
 
 class ClientConn(LineReceiver):
-	def __init__(self, gamestate):
-		self.gs = gamestate
+	def __init__(self, player):
+		self.player = player
 		self.name = "PLAYER_1"
-		print 'successfully connected to', SERVER_HOST, 'port', SERVER_PORT
-
+		self.state = WAITING_2
 	def connectionMade(self):
-		self.sendLine("PLAYER_1")
+		self.sendLine(self.name)
 	def lineReceived(self,line):
-		print line
+		if self.state != PLAYING:
+			if line.find("GOTO_WAITING") != -1:
+				
+	
+				self.player.state = WAITING_1
+				self.state = WAITING_1
+			elif line.find("GOTO_PLAYING") != -1: 
+	
+				self.player.state = PLAYING
+				self.state = PLAYING
+		else:
+			print line
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
@@ -35,17 +45,17 @@ class ClientConn(LineReceiver):
 		self.transport.sendLine(data)
 
 class ClientConnFactory(ClientFactory):
-	def __init__(self, gamestate):
-		self.gs = gamestate
+	def __init__(self, player):
+		self.player = player
 
 	def buildProtocol(self, addr):
-		return ClientConn(self.gs)
+		return ClientConn(self.player)
 
 class Player:
 	def __init__(self,gs=None,player=None):
 		self.gs = gs
 		self.name = player
-		self.state = WAITING_2
+		self.state = TITLE_SCREEN
 		self.bindings = {"up": pygame.K_UP,
 						"down": pygame.K_DOWN,
 						"right": pygame.K_RIGHT,
@@ -180,7 +190,7 @@ class Player:
 				self.win_screen.click((mx,my))
 
 	def connect_to_server(self):
-		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(gs))
+		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self))
 
 
 	

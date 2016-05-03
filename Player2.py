@@ -13,16 +13,26 @@ from GameConstants import *
 
 
 class ClientConn(LineReceiver):
-	def __init__(self, gamestate):
+	def __init__(self, player):
 
-		self.gs = gamestate
+		self.player = player
 		self.name = "PLAYER_2"
-
+		self.state = WAITING_2
 	def connectionMade(self):
 		self.sendLine(self.name)
 
 	def lineReceived(self,line):
-		print line
+		if self.state != PLAYING:
+			if line.find("GOTO_WAITING") != -1:
+				self.player.state = WAITING_1
+				self.state = WAITING_1
+
+			elif line.find("GOTO_PLAYING") != -1: 
+	
+				self.player.state = PLAYING
+				self.state = PLAYING
+		else:
+			print line
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
@@ -36,11 +46,11 @@ class ClientConn(LineReceiver):
 		self.transport.write(data)
 
 class ClientConnFactory(ClientFactory):
-	def __init__(self, gamestate):
-		self.gs = gamestate
+	def __init__(self, player):
+		self.p = player
 
 	def buildProtocol(self, addr):
-		return ClientConn(self.gs)
+		return ClientConn(self.p)
 
 class Player:
 	def __init__(self,gs=None,player=None):
@@ -181,7 +191,7 @@ class Player:
 				self.win_screen.click((mx,my))
 
 	def connect_to_server(self):
-		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self.gs))
+		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self))
 
 
 	

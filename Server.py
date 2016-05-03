@@ -25,7 +25,7 @@ class ServerConn(LineReceiver):
 		self.num_connections = self.factory.num_connections
 	def connectionMade(self):
 		self.factory.num_connections += 1
-
+		
 		if self.factory.num_connections == 1 or self.factory.num_connections == 2:
 			self.state = AUTHENTICATING
 		else:
@@ -34,7 +34,7 @@ class ServerConn(LineReceiver):
 
 	def lineReceived(self, line):
 
-
+	
 		if self.state == AUTHENTICATING:
 			self.users[line] = self
 			if self.factory.num_connections == 1:
