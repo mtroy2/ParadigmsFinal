@@ -7,33 +7,47 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue
 from twisted.internet.task import LoopingCall
+from twisted.protocols.basic import LineReceiver
 from PyGame import GameSpace
 from GameConstants import *
 SERVER_PORT = 9000
 
-class ServerConn(Protocol):
-	def __init__(self, addr, game_state, num_cons, users):
+class ServerConn(LineReceiver):
+	def __init__(self, addr, game_state,factory):
 		self.addr = addr
+		#This is the main game state
 		self.gs = game_state
-		self.num_conns = num_cons
-		self.users = users
-
-
-
+		# Factory that generates this object - used for persistent variable tracking
+		self.factory = factory
+		# variables shared across all server connections
+		self.users = self.factory.users
+		self.state = self.factory.state
+		self.num_connections = self.factory.num_connections
 	def connectionMade(self):
-		print 'new connection from', self.addr
-		self.num_conns += 1
-		print "Number of active connections = " +str(self.num_conns)
-		if self.num_conns == 1:
-			line = "GOTO_WAITING_1" + "\n"
-			self.transport.write(line)
-		else:
-			line = "GOTO_INFO"
-			self.transport.write(line)
+		self.factory.num_connections += 1
 
-	def dataReceived(self, data):
-		info = pickle.loads(data)
-		self.gs.dq.push(info)
+		if self.factory.num_connections == 1 or self.factory.num_connections == 2:
+			self.state = AUTHENTICATING
+		else:
+			self.state = EXIT_GAME
+
+
+	def lineReceived(self, line):
+
+
+		if self.state == AUTHENTICATING:
+			self.users[line] = self
+			if self.factory.num_connections == 1:
+				message = "GOTO_WAITING"
+			else:
+				message = "GOTO_PLAYING"
+				self.state = PLAYING
+
+			for name,protocol in self.users.iteritems():
+				protocol.sendLine(message)
+		else:
+			pass
+
 
 	def connectionLost(self, reason):
 		print 'connection from', self.addr, 'lost:', reason
@@ -60,9 +74,9 @@ class ServerConnFactory(Factory):
 		self.num_connections = 0
 		self.users = {} # maps user names to Chat instances
 		self.gs = gamestate
-
+		self.state = WAITING_2
 	def buildProtocol(self, addr):
-		return ServerConn(addr, self.gs, self.num_connections, self.users)
+		return ServerConn(addr, self.gs,self)
 
 
 if __name__ == '__main__':

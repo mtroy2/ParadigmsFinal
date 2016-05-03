@@ -5,26 +5,24 @@ from twisted.internet.protocol import ClientFactory, Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue
 from twisted.internet.task import LoopingCall
+from twisted.protocols.basic import LineReceiver
 from PyGame import GameSpace
 from GameObjects import *
 from GameScreens import *
 from GameConstants import *
 
 
-class ClientConn(Protocol):
-	def __init__(self, gamestate, dummy1, dummy2, dummy3):
-		gamestate.conn = self
+class ClientConn(LineReceiver):
+	def __init__(self, gamestate):
+
 		self.gs = gamestate
-		self.gs
+		self.name = "PLAYER_2"
 
 	def connectionMade(self):
-		print 'successfully connected to', SERVER_HOST, 'port', SERVER_PORT
+		self.sendLine(self.name)
 
-	def dataReceived(self, data):
-		info = pickle.loads(data)
-		#self.gs.players = info["players"]
-		#self.gs.bullets = info["bullets"]
-		print 'data received:', data
+	def lineReceived(self,line):
+		print line
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
@@ -42,7 +40,7 @@ class ClientConnFactory(ClientFactory):
 		self.gs = gamestate
 
 	def buildProtocol(self, addr):
-		return ClientConn(self.gs, "dummy", "dummy", "dummy")
+		return ClientConn(self.gs)
 
 class Player:
 	def __init__(self,gs=None,player=None):
@@ -99,7 +97,7 @@ class Player:
 			pygame.display.flip()
 
 		elif self.state == INFO_SCREEN:
-			print "Info Menu Active"
+	
 			self.info_menu()
 			pygame.display.flip()
 		elif self.state == PLAYING:
@@ -151,7 +149,7 @@ class Player:
 		# Everything related to state switching is inside those objects
 		# Main switches based on current state of game
 		# only need to blit this once
-		print self.info_screen.current_state
+	
 		if not self.info_screen.current_state:
 	
 			self.info_screen.current_state = True
@@ -189,7 +187,7 @@ class Player:
 	
 if __name__ == '__main__':
 
-	gs = GameSpace("client")
+	gs = GameSpace()
 	Player = Player("PLAYER_2",gs)
 	lc = LoopingCall(Player.main)
 	lc.start(1/10)

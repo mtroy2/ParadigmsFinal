@@ -5,25 +5,23 @@ from twisted.internet.protocol import ClientFactory, Protocol
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue
 from twisted.internet.task import LoopingCall
+from twisted.protocols.basic import LineReceiver
 from PyGame import GameSpace
 from GameObjects import *
 from GameScreens import *
 from GameConstants import *
 
 
-class ClientConn(Protocol):
+class ClientConn(LineReceiver):
 	def __init__(self, gamestate):
 		self.gs = gamestate
 		self.name = "PLAYER_1"
-
-	def connectionMade(self):
 		print 'successfully connected to', SERVER_HOST, 'port', SERVER_PORT
 
-	def dataReceived(self, data):
-		#info = pickle.loads(data)
-		#self.gs.players = info["players"]
-		#self.gs.bullets = info["bullets"]
-		print 'data received:', data
+	def connectionMade(self):
+		self.sendLine("PLAYER_1")
+	def lineReceived(self,line):
+		print line
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
@@ -34,7 +32,7 @@ class ClientConn(Protocol):
 		data["player"] = self.player
 		data["event"] = cmd
 		data = pickle.dumps(data)
-		self.transport.write(data)
+		self.transport.sendLine(data)
 
 class ClientConnFactory(ClientFactory):
 	def __init__(self, gamestate):
@@ -98,7 +96,7 @@ class Player:
 			pygame.display.flip()
 
 		elif self.state == INFO_SCREEN:
-			print "Info Menu Active"
+
 			self.info_menu()
 			pygame.display.flip()
 		elif self.state == PLAYING:
@@ -150,7 +148,7 @@ class Player:
 		# Everything related to state switching is inside those objects
 		# Main switches based on current state of game
 		# only need to blit this once
-		print self.info_screen.current_state
+
 		if not self.info_screen.current_state:
 	
 			self.info_screen.current_state = True
