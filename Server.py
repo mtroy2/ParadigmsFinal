@@ -8,7 +8,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue
 from twisted.internet.task import LoopingCall
 from twisted.protocols.basic import LineReceiver
-from PyGame import GameSpace
+from GameSpace import GameSpace
 from GameConstants import *
 SERVER_PORT = 9000
 
@@ -25,7 +25,7 @@ class ServerConn(LineReceiver):
 		self.num_connections = self.factory.num_connections
 	def connectionMade(self):
 		self.factory.num_connections += 1
-		
+		print "Num connections = ", self.factory.num_connections
 		if self.factory.num_connections == 1 or self.factory.num_connections == 2:
 			self.state = AUTHENTICATING
 		else:
@@ -36,14 +36,15 @@ class ServerConn(LineReceiver):
 
 	
 		if self.state == AUTHENTICATING:
-			self.users[line] = self
+			self.factory.users[line] = self
 			if self.factory.num_connections == 1:
 				message = "GOTO_WAITING"
 			else:
+				print "Sending GoTo playing message"
 				message = "GOTO_PLAYING"
 				self.state = PLAYING
 
-			for name,protocol in self.users.iteritems():
+			for name,protocol in self.factory.users.iteritems():
 				protocol.sendLine(message)
 		else:
 			pass

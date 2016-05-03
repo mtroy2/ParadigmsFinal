@@ -17,7 +17,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
 import random
-import GameConstants
+from GameConstants import *
 #Set up variables for host and port to connect to
 SERVER_HOST = 'student01.cse.nd.edu'
 SERVER_PORT = 40093
@@ -207,23 +207,8 @@ class GameSpace:
 		self.players.append(self.player1)
 		self.players.append(self.player2)
 		self.create_obstacles()
-	def display(self):
-		# Main switches based on current state of game
-		if self.state == TITLE_SCREEN or self.state == WAITING_1 or self.state == WAITING_2:
-			self.title_menu()
-			pygame.display.flip()
-
-		elif self.state == INFO_SCREEN:
-			self.info_menu()
-			pygame.display.flip()
-		elif self.state == PLAYING:
-			self.active_game()
-
-		elif self.state == PLAYER_1_DEAD or self.state == PLAYER_2_DEAD:
-			self.win_menu()
-			pygame.display.flip()
-		else:
-			pygame.quit()
+	def connect_player(self,player):
+		self.player = player
 class WorkHomeReceiver(LineReceiver):
 	def __init__(self,addr):
 		"""Constructor 

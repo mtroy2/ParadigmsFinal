@@ -6,7 +6,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred, DeferredQueue
 from twisted.internet.task import LoopingCall
 from twisted.protocols.basic import LineReceiver
-from PyGame import GameSpace
+from GameSpace import GameSpace
 from GameObjects import *
 from GameScreens import *
 from GameConstants import *
@@ -22,13 +22,13 @@ class ClientConn(LineReceiver):
 		self.sendLine(self.name)
 
 	def lineReceived(self,line):
+		print line
 		if self.state != PLAYING:
 			if line.find("GOTO_WAITING") != -1:
 				self.player.state = WAITING_1
 				self.state = WAITING_1
 
 			elif line.find("GOTO_PLAYING") != -1: 
-	
 				self.player.state = PLAYING
 				self.state = PLAYING
 		else:
@@ -56,7 +56,7 @@ class Player:
 	def __init__(self,gs=None,player=None):
 		self.gs = gs
 		self.name = player
-		self.state = WAITING_2
+		self.state = TITLE_SCREEN
 		self.bindings = {"up": pygame.K_UP,
 						"down": pygame.K_DOWN,
 						"right": pygame.K_RIGHT,
@@ -90,7 +90,7 @@ class Player:
 		
 		# 	game counters 
 		self.waiting_counter = 0.0
-	
+		self.gs.connect_player(self)
 	# given a key, lookup the event for it	
 	def lookupBinding(self,keyEntered):
 		for binding,keyBound in self.bindings.items():
@@ -190,6 +190,87 @@ class Player:
 				mx,my = pygame.mouse.get_pos()
 				self.win_screen.click((mx,my))
 
+	def active_game(self):
+		
+		# Each player gets +1 ammo every 5 seconds
+		self.gs.ammo_increase_counter += 1./30
+		if self.gs.ammo_increase_counter >= 10.0:
+			self.gs.ammo_increase_counter = 0.
+			self.gs.players[0].increase_ammo(1)
+			self.gs.players[1].increase_ammo(1)
+			self.show_ammo()
+
+		for event in pygame.event.get():
+
+			if event.type == QUIT:
+				sys.exit()
+		
+			if event.type == KEYDOWN:
+				binding = self.lookupBinding(event.key)
+				if binding != "not found":
+					self.inputState[binding] = True
+			# If any key is released, and it is mapped, make its pressed status false		
+			if event.type == KEYUP:
+				binding = self.lookupBinding(event.key)
+				if binding != "not found":
+					self.inputState[binding] = False
+			# if mouse is pressed		
+			if event.type == MOUSEBUTTONDOWN:
+				#set click status to True
+				self.inputState["click"] = True
+
+			# on click , fire		
+			if event.type == MOUSEBUTTONUP:	
+				self.gs.players[1].click()
+				self.show_ammo()
+
+		# Handle tank mvt
+		for event, status in self.inputState.items():
+			# loop through dict, if the status of that button is True (pressed)
+			if status:
+				# on click, run click function in player
+				if event == "up" or event == "down":
+					# otherwise, it's a movement. Run move function
+					self.gs.players[1].move(event)
+				elif event == "left" or event == "right":
+					self.gs.players[1].rotate(event)
+			# Redraw all objects on screen
+		self.screen.fill((0,0,0))
+		# redraw map
+		self.screen.blit(self.map.image, self.map.rect)
+		#redraw bushes
+		for bush in self.gs.game_obstacles:
+			self.screen.blit(bush.image, bush.rect)
+		# tick player, and redraw		# Players should tick themselves from client side
+		for player in self.gs.players:
+			player.tick()
+			self.screen.blit(player.image, player.rect)
+			self.screen.blit(player.turret.image, player.turret.rect)
+		#Tick bullets, and redraw		# Bullets should be ticked from server
+		for bullet in self.gs.bullets:
+			bullet.tick()
+			self.screen.blit(bullet.image,bullet.rect)
+		# Draw ammo and health
+		self.draw_health_bars()	
+		self.show_ammo()
+
+		pygame.display.flip()
+
+
+
+
+
+	def draw_health_bars(self):
+		pygame.draw.rect(self.screen, (255,0,0), (103,36, self.gs.player1.health, 15))
+		pygame.draw.rect(self.screen, (255,0,0), (346,36, self.gs.player2.health, 15))
+		
+	def show_ammo(self):
+		p1_ammo_line = str(self.gs.player1.ammo)
+		p2_ammo_line = str(self.gs.player2.ammo)
+		p1_ammo_text = self.font.render(p1_ammo_line,1,(255,255,255))
+		p2_ammo_text = self.font.render(p2_ammo_line,1,(255,255,255))
+		self.screen.blit(p1_ammo_text, (85,64))
+		self.screen.blit(p2_ammo_text, (330,64))
 	def connect_to_server(self):
 		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self))
 
@@ -198,7 +279,7 @@ class Player:
 if __name__ == '__main__':
 
 	gs = GameSpace()
-	Player = Player("PLAYER_2",gs)
+	Player = Player(gs,"PLAYER_1")
 	lc = LoopingCall(Player.main)
 	lc.start(1/10)
 

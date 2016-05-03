@@ -15,7 +15,7 @@ from twisted.internet.tcp import Port
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
-import GameConstants
+from GameConstants import *
 
 class Turret(pygame.sprite.Sprite):
 	def __init__(self,owner,gs=None):
@@ -90,9 +90,13 @@ class Tank(pygame.sprite.Sprite):
 		self.health -= damage
 		if self.health <= 0:
 			if self.PLAYER == "PLAYER_1":
-				self.gs.state = PLAYER_1_DEAD
+				print "Switching to P1_DEAD"
+				self.gs.player.state = PLAYER_1_DEAD
+				self.gs.reset()
 			else:
-				self.gs.state = PLAYER_2_DEAD 
+				print "Switching to P2 DEAD"
+				self.gs.player.state = PLAYER_2_DEAD 
+				self.gs.reset()
 	def click(self):
 		if self.ammo >0:
 			self.gs.create_bullet(self.rect.center,self.turret.angle)
