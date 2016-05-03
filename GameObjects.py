@@ -15,18 +15,7 @@ from twisted.internet.tcp import Port
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
-TITLE_SCREEN = 0
-WAITING_2 = 1
-WAITING_1 = 2
-INFO_SCREEN = 3
-WAITING_FOR_PLAYER = 4
-PLAYING = 5
-PLAYER_1_DEAD = 6
-PLAYER_2_DEAD = 7
-TOP_LEFT = 0
-TOP_RIGHT = 1
-BOTTOM_RIGHT =2
-BOTTOM_LEFT = 3
+import GameConstants
 
 class Turret(pygame.sprite.Sprite):
 	def __init__(self,owner,gs=None):

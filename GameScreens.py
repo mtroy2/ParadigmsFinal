@@ -15,16 +15,7 @@ from twisted.internet.tcp import Port
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredQueue
 from twisted.internet.protocol import ClientFactory
-TITLE_SCREEN = 0
-WAITING_2 = 1
-WAITING_1 = 2
-INFO_SCREEN = 3
-WAITING_FOR_PLAYER = 4
-PLAYING = 5
-PLAYER_1_DEAD = 6
-PLAYER_2_DEAD = 7
-EXIT_GAME = 8
-
+from GameConstants import *
 
 class Title_screen(pygame.sprite.Sprite):
 	def __init__(self,gs=None):
@@ -44,6 +35,7 @@ class Title_screen(pygame.sprite.Sprite):
 		# click was in play button
 		if self.play_button.collidepoint(click_point):
 			if self.gs.state == WAITING_2:
+				self.gs.connect_to_server()
 				self.gs.state = WAITING_1
 			elif self.gs.state == WAITING_1:
 				self.gs.show_ammo()
@@ -53,6 +45,7 @@ class Title_screen(pygame.sprite.Sprite):
 			
 
 		elif self.info_button.collidepoint(click_point):
+			
 			self.gs.state = INFO_SCREEN
 			self.current_state = False
 		elif self.exit_button.collidepoint(click_point):

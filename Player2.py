@@ -99,6 +99,7 @@ class Player:
 			pygame.display.flip()
 
 		elif self.state == INFO_SCREEN:
+			print "Info Menu Active"
 			self.info_menu()
 			pygame.display.flip()
 		elif self.state == PLAYING:
@@ -150,7 +151,7 @@ class Player:
 		# Everything related to state switching is inside those objects
 		# Main switches based on current state of game
 		# only need to blit this once
-
+		print self.info_screen.current_state
 		if not self.info_screen.current_state:
 	
 			self.info_screen.current_state = True
@@ -181,16 +182,6 @@ class Player:
 				mx,my = pygame.mouse.get_pos()
 				self.win_screen.click((mx,my))
 
-
-
-	def draw_health_bars(self):
-		pygame.draw.rect(self.screen,(255,0,0),(102,36,self.gs.players[0].health,14))
-		pygame.draw.rect(self.screen,(255,0,0),(345,36,self.gs.players[1].health,14))
-	def show_ammo(self):
-		player_1_ammo = self.font.render(str(self.gs.players[0].ammo),1,(255,255,255))
-		player_2_ammo = self.font.render(str(self.gs.players[1].ammo),1,(255,255,255))
-		self.screen.blit(player_2_ammo, (332,63))
-
 	def connect_to_server(self):
 		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self.gs))
 
@@ -198,8 +189,8 @@ class Player:
 	
 if __name__ == '__main__':
 
-	gs = GameSpace()
-	Player = Player("PLAYER_1",gs)
+	gs = GameSpace("client")
+	Player = Player("PLAYER_2",gs)
 	lc = LoopingCall(Player.main)
 	lc.start(1/10)
 
