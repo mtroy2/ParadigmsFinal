@@ -41,6 +41,19 @@ class ClientConn(LineReceiver):
 			if line["type"] == "GOTO_MENU":
 				self.player.state = TITLE_SCREEN
 				self.state = TITLE_SCREEN
+			elif line["type"] == "UPDATE":
+				p1dict = line["player1"]
+				p2dict = line["player2"]
+				self.player.gs.players[0].rect_center = p1dict["rect_center"]
+				self.player.gs.players[0].angle = p1dict["angle"]
+				self.player.gs.players[0].health = p1dict["health"]
+				self.player.gs.players[0].ammo = p1dict["ammo"]
+				self.player.gs.players[0].turret.angle = p1dict["turret_angle"]
+				self.player.gs.players[1].rect_center = p2dict["rect_center"]
+				self.player.gs.players[1].angle = p2dict["angle"]
+				self.player.gs.players[1].health = p2dict["health"]
+				self.player.gs.players[1].ammo = p2dict["ammo"]
+				self.player.gs.players[1].turret.angle = p2dict["turret_angle"]
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
@@ -201,7 +214,7 @@ class Player:
 	def active_game(self):
 		# Send data to server
 		data = {}
-		data["player"] = 0
+		data["player"] = 1
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				self.connection.transport.loseConnection()
