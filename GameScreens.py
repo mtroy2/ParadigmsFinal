@@ -63,19 +63,14 @@ class Win_screen(pygame.sprite.Sprite):
 		self.player = player
 		self.image = pygame.image.load(os.getcwd()+"/screens/Win_screen.png")
 		self.rect = self.image.get_rect()
-		self.play_again_button = pygame.Rect(356,84,80,29)
-		self.end_button = pygame.Rect(356,131,61,29)
+		self.exit_button = pygame.Rect(356,82,108,33)
+		self.menu_button = pygame.Rect(356,131,140,33)
 		self.play_again_clicks = 0
 		self.current_state = False		
 	def click(self,click_point):
-		if self.play_again_button.collidepoint(click_point):
-			self.play_again_clicks +=1
-			if self.play_again_clicks == 2:
-				self.player.gs.reset()
-				self.play_again_clicks = 0
-				self.player.state = PLAYING
-				self.current_state = False
-		if self.end_button.collidepoint(click_point):
+		if self.exit_button.collidepoint(click_point):
+			reactor.stop()
+		if self.menu_button.collidepoint(click_point):
 			self.player.gs.reset()
 			self.player.state = TITLE_SCREEN
 			self.current_state = False
