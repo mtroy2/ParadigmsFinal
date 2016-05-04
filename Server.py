@@ -69,7 +69,8 @@ class ServerConn(LineReceiver):
 					elif event == "left" or event == "right":
 						self.gs.players[p].rotate(event)
 					elif event == "click":
-						self.gs.players[p].click()
+						i = 0
+						#self.gs.players[p].click()
 
 			# Tick player
 			self.gs.players[p].tick(mpos[0], mpos[1])
@@ -110,18 +111,24 @@ class ServerConn(LineReceiver):
 		data["player1"]["angle"] = self.gs.players[0].angle
 		data["player1"]["health"] = self.gs.players[0].health
 		data["player1"]["ammo"] = self.gs.players[0].ammo
+		data["player1"]["turret_center"] = self.gs.players[0].turret.rect.center
 		data["player1"]["turret_angle"] = self.gs.players[0].turret.angle
 		data["player2"] = {}
 		data["player2"]["rect_center"] = self.gs.players[1].rect.center
 		data["player2"]["angle"] = self.gs.players[1].angle
 		data["player2"]["health"] = self.gs.players[1].health
 		data["player2"]["ammo"] = self.gs.players[1].ammo
+		data["player2"]["turret_center"] = self.gs.players[1].turret.rect.center
 		data["player2"]["turret_angle"] = self.gs.players[1].turret.angle
 
 		# data["bullets"] = [list of dicts]:
 		#						"center" 	= bullet.center
 		#						"angle"		= bullet.angle
 		#						"dist"		= bullet.total_distance
+
+		data = pickle.dumps(data)
+		for name, protocol in self.factory.users.iteritems():
+			protocol.sendLine(data)
 
 class ServerConnFactory(Factory):
 	def __init__(self, gamestate):

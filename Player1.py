@@ -24,7 +24,6 @@ class ClientConn(LineReceiver):
 
 	def lineReceived(self,line):
 		line = pickle.loads(line)
-		print line
 		if self.state != PLAYING:
 			if line["type"] == "GOTO_WAITING":
 				self.player.state = WAITING_1
@@ -44,27 +43,26 @@ class ClientConn(LineReceiver):
 			elif line["type"] == "UPDATE":
 				p1dict = line["player1"]
 				p2dict = line["player2"]
-				self.player.gs.players[0].rect_center = p1dict["rect_center"]
+				self.player.gs.players[0].rect.center = p1dict["rect_center"]
 				self.player.gs.players[0].angle = p1dict["angle"]
 				self.player.gs.players[0].health = p1dict["health"]
 				self.player.gs.players[0].ammo = p1dict["ammo"]
+				self.player.gs.players[0].turret.rect.center = p1dict["turret_center"]
 				self.player.gs.players[0].turret.angle = p1dict["turret_angle"]
-				self.player.gs.players[1].rect_center = p2dict["rect_center"]
+				self.player.gs.players[0].transform_img()
+				self.player.gs.players[0].turret.transform_img()
+				self.player.gs.players[1].rect.center = p2dict["rect_center"]
 				self.player.gs.players[1].angle = p2dict["angle"]
 				self.player.gs.players[1].health = p2dict["health"]
 				self.player.gs.players[1].ammo = p2dict["ammo"]
+				self.player.gs.players[1].turret.rect.center = p2dict["turret_center"]
 				self.player.gs.players[1].turret.angle = p2dict["turret_angle"]
+				self.player.gs.players[1].transform_img()
+				self.player.gs.players[1].turret.transform_img()
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
 		reactor.stop()
-
-	def sendEvent(self, event):
-		data = {}
-		data["player"] = self.player
-		data["event"] = cmd
-		data = pickle.dumps(data)
-		self.transport.sendLine(data)
 
 class ClientConnFactory(ClientFactory):
 	def __init__(self, player):
