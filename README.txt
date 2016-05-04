@@ -5,9 +5,11 @@
    Mason Prosser
 
 ### HOW TO PLAY ###
-Battle Tanks is very simple: first run Server.py, then agree with a friend who will be Player 1 and who will be Player 2.
-Each player should execute the appropriate file, which will open up the game window. Click 'Play' to establish a connection
-to the server, and the game will begin!
+Battle Tanks is very simple: 
+1. Run Server.py from the student02 machine, making sure X forwarding is enabled if you are connecting to this machine
+	remotely.
+2. Agree with a friend who will be Player 1 and who will be Player 2.
+3. Execute the appropriate file, and press 'Play' to connect to the server and begin the game!
 
 The controls are simple:
 - ARROW KEYS:
