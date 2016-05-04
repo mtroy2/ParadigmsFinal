@@ -49,9 +49,11 @@ class Turret(pygame.sprite.Sprite):
 			rotRectangle.center = tank_center
 			self.rect = rotRectangle
 
-	def transform_img(self):
+	def transform_img(self, tank_center):
 		self.image = pygame.transform.rotate(self.orig_image, math.degrees(self.angle)+90)
-
+		rotRectangle = self.image.get_rect()
+		rotRectangle.center = tank_center
+		self.rect = rotRectangle
 
 
 	def rot_point(self,point,axis,ang):

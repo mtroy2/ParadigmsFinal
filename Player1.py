@@ -50,7 +50,7 @@ class ClientConn(LineReceiver):
 				self.player.gs.players[0].turret.rect.center = p1dict["turret_center"]
 				self.player.gs.players[0].turret.angle = p1dict["turret_angle"]
 				self.player.gs.players[0].transform_img()
-				self.player.gs.players[0].turret.transform_img()
+				self.player.gs.players[0].turret.transform_img(self.player.gs.players[0].rect.center)
 				self.player.gs.players[1].rect.center = p2dict["rect_center"]
 				self.player.gs.players[1].angle = p2dict["angle"]
 				self.player.gs.players[1].health = p2dict["health"]
@@ -58,7 +58,7 @@ class ClientConn(LineReceiver):
 				self.player.gs.players[1].turret.rect.center = p2dict["turret_center"]
 				self.player.gs.players[1].turret.angle = p2dict["turret_angle"]
 				self.player.gs.players[1].transform_img()
-				self.player.gs.players[1].turret.transform_img()
+				self.player.gs.players[1].turret.transform_img(self.player.gs.players[1].rect.center)
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
