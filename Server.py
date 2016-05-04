@@ -26,7 +26,6 @@ class ServerConn(LineReceiver):
 
 	def connectionMade(self):
 		self.factory.num_connections += 1
-		print "Num connections = ", self.factory.num_connections
 		if self.factory.num_connections == 1 or self.factory.num_connections == 2:
 			self.state = AUTHENTICATING
 		else:
@@ -40,12 +39,15 @@ class ServerConn(LineReceiver):
 		return "not found"
 
 	def lineReceived(self, line):
+		# If we are authenticating , then any line received is data about the connection
 		if self.state == AUTHENTICATING:
 			self.factory.users[line] = self
 			data = {}
+			# Send message back to first connection, telling it to wait for second
 			if self.factory.num_connections == 1:
 				data["type"] = "GOTO_WAITING"
 			else:
+				# Tell all connections to start the game
 				data["type"] = "GOTO_PLAYING"
 				data["obstacles"] = []
 				for obstacle in gs.game_obstacles:
@@ -56,12 +58,14 @@ class ServerConn(LineReceiver):
 			for name,protocol in self.factory.users.iteritems():
 				protocol.sendLine(data)
 		else:
+			# Load all data from pickle
 			make_bullet = False
 			line = pickle.loads(line)
 			p = line["player"]
 			inputState = line["inputState"]
 			mpos = line["mouse"]
-		
+			# Read all input data from each player
+
 			# Tank movement
 			for event, status in inputState.items():
 				if status:
@@ -78,15 +82,15 @@ class ServerConn(LineReceiver):
 			# Tick player
 			self.gs.players[p].tick(mpos[0], mpos[1])
 
-			# Update the game state
+			# Update the master game state and send it off to players
 			self.updateGameState(make_bullet)
 
 	
 	def connectionLost(self, reason):
-		print 'connection from', self.addr, 'lost:', reason
 		print 'Player left the game, booting remaining players'
 		self.state = AUTHENTICATING
 		data = {}
+		# Send other player back to menu
 		data["type"] = "GOTO_MENU"
 		data = pickle.dumps(data)
 		for name, protocol in self.factory.users.iteritems():
@@ -105,6 +109,7 @@ class ServerConn(LineReceiver):
 			self.gs.players[1].increase_ammo(1)
 
 		data = {}
+		# Load bullet info
 		data["bullets"] = []
 		# Tick bullets
 		for bullet in self.gs.bullets:
@@ -133,7 +138,7 @@ class ServerConn(LineReceiver):
 
 		if data["player1"]["health"] <= 0 or data["player2"]["health"] <= 0:
 			self.gs.reset()
-
+		# Send all info about current game state to players
 		data = pickle.dumps(data)
 		for name, protocol in self.factory.users.iteritems():
 			protocol.sendLine(data)

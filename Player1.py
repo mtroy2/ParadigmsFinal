@@ -12,9 +12,10 @@ from GameScreens import *
 from GameConstants import *
 import cPickle as pickle
 
-
+#Connector between Player and server
 class ClientConn(LineReceiver):
 	def __init__(self, player):
+		#Has an instance of player object
 		self.player = player
 		self.name = "PLAYER_1"
 		self.state = WAITING_2
@@ -23,24 +24,29 @@ class ClientConn(LineReceiver):
 		self.sendLine(self.name)
 
 	def lineReceived(self,line):
-		line = pickle.loads(line)
+		line = pickle.loads(line)	
+		# If we aren't playing, we are either the first to connect or the second
 		if self.state != PLAYING:
+			# if first, wait for second
 			if line["type"] == "GOTO_WAITING":
 				self.player.state = WAITING_1
 				self.state = WAITING_1
-
+			# If second start playing
 			elif line["type"] == "GOTO_PLAYING": 
 				i = 0
+				# load obstacle info
 				for obstacle in self.player.gs.game_obstacles:
 					obstacle.rect.center = line["obstacles"][i]
 					i += 1
 				self.player.state = PLAYING
 				self.state = PLAYING
 		else:
+			# force out to menu
 			if line["type"] == "GOTO_MENU":
 				self.player.state = TITLE_SCREEN
 				self.state = TITLE_SCREEN
 				self.transport.loseConnection()
+			# Read all info out of two dicts about player info
 			elif line["type"] == "UPDATE":
 				p1dict = line["player1"]
 				p2dict = line["player2"]

@@ -1,3 +1,4 @@
+#Game states
 TITLE_SCREEN = 0
 WAITING_2 = 1
 WAITING_1 = 2
@@ -7,10 +8,12 @@ PLAYING = 5
 PLAYER_1_DEAD = 6
 PLAYER_2_DEAD = 7
 EXIT_GAME = 8
-SERVER_HOST = 'localhost'
+#Connection info
+SERVER_HOST = 'student02.cse.nd.edu'
 SERVER_PORT = 9000
+#Connection state
 AUTHENTICATING = 9
-
+#Bounding box info
 TOP_RIGHT = 10
 TOP_LEFT = 11
 BOTTOM_RIGHT = 12

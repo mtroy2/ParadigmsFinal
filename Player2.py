@@ -12,7 +12,7 @@ from GameScreens import *
 from GameConstants import *
 import cPickle as pickle
 
-
+#Almost exactly the same as player1.py - refer to comments there
 class ClientConn(LineReceiver):
 	def __init__(self, player):
 		self.player = player
