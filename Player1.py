@@ -17,6 +17,7 @@ class ClientConn(LineReceiver):
 		self.player = player
 		self.name = "PLAYER_1"
 		self.state = WAITING_2
+		self.player.add_connection(self)
 	def connectionMade(self):
 		self.sendLine(self.name)
 	def lineReceived(self,line):
@@ -271,7 +272,8 @@ class Player:
 		self.screen.blit(p2_ammo_text, (330,64))
 	def connect_to_server(self):
 		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self))
-
+	def add_connection(self,connection):
+		self.connection = connection
 	
 if __name__ == '__main__':
 

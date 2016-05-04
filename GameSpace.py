@@ -209,47 +209,4 @@ class GameSpace:
 		self.create_obstacles()
 	def connect_player(self,player):
 		self.player = player
-class WorkHomeReceiver(LineReceiver):
-	def __init__(self,addr):
-		"""Constructor 
-	for Server running, servicing work connections on home machine"""
 
-	
-		self.addr = addr
-		print "Work<-->Home: Command Connection received from work: "
-
-	def connectionMade(self):
-		"""This runs after the connection is verified on both sides"""
-
-		print "Work<-->Home: Command Connection established"
-		############
-		print "Listening on ", CLIENT_PORT
-		#reactor.listenTCP(CLIENT_PORT, ClientHomeFactory(self))
-		#newListen(CLIENT_PORT,self)
-
-	def sendData(self,data):
-		self.transport.write(data)
-
-	def error(self,message):
-		self.transport.write(message)
-
-	def connectionLost(self,reason):
-		print "Work<-->Home: Lost command connection to work computer "
-		
-
-
-class WorkHomeFactory(Factory):
-	"""This is a class that builds the server to handle connections from the client"""
-	def buildProtocol(self,addr):
-		return WorkHomeReceiver(addr)
-
-
-if __name__ == '__main__':
-	gs = GameSpace()
-	lc = LoopingCall(gs.main)
-	lc.start(1/5)
-
-	#reactor.listenTCP(COMMAND_PORT, WorkHomeFactory())
-	reactor.run()
-	#reactor.run()
-	lc.stop()

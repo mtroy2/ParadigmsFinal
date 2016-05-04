@@ -34,13 +34,11 @@ class ServerConn(LineReceiver):
 
 	def lineReceived(self, line):
 
-	
 		if self.state == AUTHENTICATING:
 			self.factory.users[line] = self
 			if self.factory.num_connections == 1:
 				message = "GOTO_WAITING"
 			else:
-				print "Sending GoTo playing message"
 				message = "GOTO_PLAYING"
 				self.state = PLAYING
 
