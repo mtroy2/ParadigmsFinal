@@ -97,7 +97,7 @@ class Tank(pygame.sprite.Sprite):
 				self.gs.reset()
 			else:
 				print "Switching to P2 DEAD"
-				self.gs.player.state = PLAYER_2_DEAD 
+				self.gs.player.state = PLAYER_2_DEAD
 				self.gs.reset()
 	def click(self):
 		if self.ammo >0:

@@ -202,11 +202,12 @@ class GameSpace:
 		self.turret1 = Turret("PLAYER_1",self)
 		self.turret2 = Turret("PLAYER_2",self)
 		self.player1 = Tank(self.turret1, "PLAYER_1",(50,150),self)
-		self.player2 = Tank(self.turret2, "PLAYER_2", (400,500),self)
+		self.player2 = Tank(self.turret2, "PLAYER_2", (450,500),self)
 		#self.gameObjects.append(self.walls)
 		self.players.append(self.player1)
 		self.players.append(self.player2)
 		self.create_obstacles()
+		print 'reset complete'
 	def connect_player(self,player):
 		self.player = player
 

@@ -40,6 +40,7 @@ class ClientConn(LineReceiver):
 			if line["type"] == "GOTO_MENU":
 				self.player.state = TITLE_SCREEN
 				self.state = TITLE_SCREEN
+				self.transport.loseConnection()
 			elif line["type"] == "UPDATE":
 				p1dict = line["player1"]
 				p2dict = line["player2"]
@@ -59,10 +60,18 @@ class ClientConn(LineReceiver):
 				self.player.gs.players[1].turret.angle = p2dict["turret_angle"]
 				self.player.gs.players[1].transform_img()
 				self.player.gs.players[1].turret.transform_img(self.player.gs.players[1].rect.center)
+				bullet_dict = line["bullets"]
+				if line["make_bullet"] == True:
+					self.player.gs.create_bullet( bullet_dict[-1]["center"], bullet_dict[-1]["angle"] )
+
+				if self.player.gs.players[0].health <= 0:
+					self.player.state = PLAYER_1_DEAD
+				elif self.player.gs.players[1].health <= 0:
+					self.player.state = PLAYER_2_DEAD
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
-		reactor.stop()
+		#reactor.stop()
 
 	def sendEvent(self, event):
 		data = {}
@@ -211,15 +220,21 @@ class Player:
 				self.screen.blit(self.p1_win_text, (20,37))
 		for event in pygame.event.get():
 			if event.type == QUIT:
+				reactor.stop()
 				sys.exit()
 			if event.type == MOUSEBUTTONUP:
 				mx,my = pygame.mouse.get_pos()
-				self.win_screen.click((mx,my))
+				state = self.win_screen.click((mx,my))
+				if state == TITLE_SCREEN:
+					self.connection.transport.loseConnection()
+				elif state == PLAYING:
+					self.connection.sendLine
 
 	def active_game(self):
 		# Send data to server
 		data = {}
 		data["player"] = 1
+		self.inputState["click"] = False
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				self.connection.transport.loseConnection()
@@ -234,9 +249,9 @@ class Player:
 				if binding != "not found":
 					self.inputState[binding] = False
 			elif event.type == MOUSEBUTTONDOWN:
-				self.inputState["click"] = True
-			elif event.type == MOUSEBUTTONUP:
 				self.inputState["click"] = False
+			elif event.type == MOUSEBUTTONUP:
+				self.inputState["click"] = True
 
 		data["mouse"] = pygame.mouse.get_pos()
 		data["inputState"] = self.inputState
@@ -258,10 +273,10 @@ class Player:
 
 		# Redraw bullets
 		for bullet in self.gs.bullets:
+			bullet.tick()
 			self.screen.blit(bullet.image,bullet.rect)
-		# Draw ammo and health
-		self.draw_health_bars()	
 		self.show_ammo()
+		self.draw_health_bars()	
 
 		pygame.display.flip()
 

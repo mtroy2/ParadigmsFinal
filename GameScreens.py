@@ -55,7 +55,7 @@ class Info_screen(pygame.sprite.Sprite):
 	def click(self,click_point):
 		if self.return_button.collidepoint(click_point):
 			print "Button clicked, returning to title"
-			self.player.state = WAITING_2	
+			self.player.state = TITLE_SCREEN	
 			
 			self.current_state = False	
 class Win_screen(pygame.sprite.Sprite):
@@ -68,14 +68,17 @@ class Win_screen(pygame.sprite.Sprite):
 		self.play_again_clicks = 0
 		self.current_state = False		
 	def click(self,click_point):
-		self.player.gs.reset()
 		if self.play_again_button.collidepoint(click_point):
 			self.play_again_clicks +=1
 			if self.play_again_clicks == 2:
+				self.player.gs.reset()
 				self.play_again_clicks = 0
 				self.player.state = PLAYING
 				self.current_state = False
 		if self.end_button.collidepoint(click_point):
-			self.player.state = WAITING_2
+			self.player.gs.reset()
+			self.player.state = TITLE_SCREEN
 			self.current_state = False
+
+		return self.player.state
 	

@@ -56,11 +56,12 @@ class ServerConn(LineReceiver):
 			for name,protocol in self.factory.users.iteritems():
 				protocol.sendLine(data)
 		else:
+			make_bullet = False
 			line = pickle.loads(line)
 			p = line["player"]
 			inputState = line["inputState"]
 			mpos = line["mouse"]
-
+		
 			# Tank movement
 			for event, status in inputState.items():
 				if status:
@@ -69,14 +70,16 @@ class ServerConn(LineReceiver):
 					elif event == "left" or event == "right":
 						self.gs.players[p].rotate(event)
 					elif event == "click":
-						i = 0
-						#self.gs.players[p].click()
-
+						print "running click"
+						if self.gs.players[p].ammo > 0:
+							make_bullet = True
+						self.gs.players[p].click()
+						
 			# Tick player
 			self.gs.players[p].tick(mpos[0], mpos[1])
 
 			# Update the game state
-			self.updateGameState()
+			self.updateGameState(make_bullet)
 
 	
 	def connectionLost(self, reason):
@@ -90,21 +93,28 @@ class ServerConn(LineReceiver):
 			protocol.sendLine(data)
 		self.factory.num_connections = 0
 		self.factory.users.clear()
+		self.gs.reset()
 
 
-	def updateGameState(self):
+	def updateGameState(self,make_bullet):
 		# Each player gets +1 ammo every 5 seconds
-		self.gs.ammo_increase_counter += 1./30
+		self.gs.ammo_increase_counter += 1./60
 		if self.gs.ammo_increase_counter >= 10.0:
 			self.gs.ammo_increase_counter = 0.
 			self.gs.players[0].increase_ammo(1)
 			self.gs.players[1].increase_ammo(1)
 
-		# Tick bullets
-		#for bullet in self.gs.bullets:
-		#	bullet.tick()
-
 		data = {}
+		data["bullets"] = []
+		# Tick bullets
+		for bullet in self.gs.bullets:
+			bullet.tick()
+			bullet_dict = {}
+			bullet_dict["center"] = bullet.center
+			bullet_dict["angle"] = bullet.angle
+			data["bullets"].append( bullet_dict )
+
+		data["make_bullet"] = make_bullet
 		data["type"] = "UPDATE"
 		data["player1"] = {}
 		data["player1"]["rect_center"] = self.gs.players[0].rect.center
@@ -121,10 +131,8 @@ class ServerConn(LineReceiver):
 		data["player2"]["turret_center"] = self.gs.players[1].turret.rect.center
 		data["player2"]["turret_angle"] = self.gs.players[1].turret.angle
 
-		# data["bullets"] = [list of dicts]:
-		#						"center" 	= bullet.center
-		#						"angle"		= bullet.angle
-		#						"dist"		= bullet.total_distance
+		if data["player1"]["health"] <= 0 or data["player2"]["health"] <= 0:
+			self.gs.reset()
 
 		data = pickle.dumps(data)
 		for name, protocol in self.factory.users.iteritems():
