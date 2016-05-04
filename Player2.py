@@ -227,8 +227,6 @@ class Player:
 				state = self.win_screen.click((mx,my))
 				if state == TITLE_SCREEN:
 					self.connection.transport.loseConnection()
-				elif state == PLAYING:
-					self.connection.sendLine
 
 	def active_game(self):
 		# Send data to server

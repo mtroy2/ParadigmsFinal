@@ -217,7 +217,9 @@ class Player:
 				sys.exit()
 			if event.type == MOUSEBUTTONUP:
 				mx,my = pygame.mouse.get_pos()
-				self.win_screen.click((mx,my))
+				state = self.win_screen.click((mx,my))
+				if state == TITLE_SCREEN:
+					self.connection.transport.loseConnection()
 
 	def active_game(self):
 		# Send data to server
