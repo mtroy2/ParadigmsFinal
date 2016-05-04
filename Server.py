@@ -23,6 +23,7 @@ class ServerConn(LineReceiver):
 		self.users = self.factory.users
 		self.state = self.factory.state
 		self.num_connections = self.factory.num_connections
+
 	def connectionMade(self):
 		self.factory.num_connections += 1
 		print "Num connections = ", self.factory.num_connections
@@ -31,42 +32,89 @@ class ServerConn(LineReceiver):
 		else:
 			self.state = EXIT_GAME
 
+	def lookupBinding(self,keyEntered):
+		for binding,keyBound in self.bindings.items():
+			if keyEntered == keyBound:
+				
+				return binding
+		return "not found"
 
 	def lineReceived(self, line):
-
 		if self.state == AUTHENTICATING:
 			self.factory.users[line] = self
+			data = {}
 			if self.factory.num_connections == 1:
-				message = "GOTO_WAITING"
+				data["type"] = "GOTO_WAITING"
 			else:
-				message = "GOTO_PLAYING"
+				data["type"] = "GOTO_PLAYING"
+				data["obstacles"] = []
+				for obstacle in gs.game_obstacles:
+					data["obstacles"].append(obstacle.rect.center)
 				self.state = PLAYING
 
+			data = pickle.dumps(data)
 			for name,protocol in self.factory.users.iteritems():
-				protocol.sendLine(message)
+				protocol.sendLine(data)
 		else:
-			pass
+			line = pickle.loads(line)
+			p = line["player"]
+			inputState = line["inputState"]
+			mpos = line["mouse"]
 
+			# Tank movement
+			for event, status in inputState.items():
+				if status:
+					if event == "up" or event == "down":
+						self.gs.players[p].move(event)
+					elif event == "left" or event == "right":
+						self.gs.players[p].rotate(event)
+					elif event == "click":
+						self.gs.players[p].click()
 
+			# Tick player
+			self.gs.players[p].tick(mpos[0], mpos[1])
+
+			# Update the game state
+			self.updateGameState()
+
+	
 	def connectionLost(self, reason):
 		print 'connection from', self.addr, 'lost:', reason
-		print 'Player left the game, waiting for new player'
-
-
-	def updateGameState(self, player_info, bullet_info):
+		print 'Player left the game, booting remaining players'
+		self.state = AUTHENTICATING
 		data = {}
-		# data["contents"] = player_X_info:
+		data["type"] = "GOTO_MENU"
+		data = pickle.dumps(data)
+		for name, protocol in self.factory.users.iteritems():
+			protocol.sendLine(data)
+		self.factory.num_connections = 0
+		self.factory.users.clear()
+
+
+	def updateGameState(self):
+		# Each player gets +1 ammo every 5 seconds
+		self.gs.ammo_increase_counter += 1./30
+		if self.gs.ammo_increase_counter >= 10.0:
+			self.gs.ammo_increase_counter = 0.
+			self.gs.players[0].increase_ammo(1)
+			self.gs.players[1].increase_ammo(1)
+
+		# Tick bullets
+		#for bullet in self.gs.bullets:
+		#	bullet.tick()
+
+		data = {}
+		# data["type"] = player_X_info:
 		#	"rect_center" 	= self.gs.players[X].rect.center
 		#	"angle"			= self.gs.players[X].angle
 		# 	"health"		= self.gs.players[X].health
 		# 	"ammo"			= self.gs.players[X].ammo
 		#	"turret_angle"  = self.gs.players[X].turret.angle
-		# data["contents"] = bullet_info:
+		# data["type"] = bullet_info:
 		#	"bullets"		= [list of dicts]:
 		#						"center" 	= bullet.center
 		#						"angle"		= bullet.angle
 		#						"dist"		= bullet.total_distance
-		#						
 
 class ServerConnFactory(Factory):
 	def __init__(self, gamestate):

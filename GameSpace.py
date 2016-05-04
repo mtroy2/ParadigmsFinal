@@ -53,7 +53,7 @@ class GameSpace:
 		self.turret1 = Turret("PLAYER_1",self)
 		self.turret2 = Turret("PLAYER_2",self)
 		self.player1 = Tank(self.turret1, "PLAYER_1",(50,150),self)
-		self.player2 = Tank(self.turret2, "PLAYER_2", (400,500),self)
+		self.player2 = Tank(self.turret2, "PLAYER_2", (450,500),self)
 
 		self.players.append(self.player1)
 		self.players.append(self.player2)
@@ -179,7 +179,7 @@ class GameSpace:
 			elif (rand_x <= 400 and rand_x >= 350 and rand_y <= 450 and rand_y >= 360):
 				rand_x = random.randint(120,380)
 				rand_y = random.randint(150,480)
-			obstacle = Obstacle((rand_x,rand_y),rand_type)
+			obstacle = Obstacle((rand_x,rand_y),1)
 			self.game_obstacles.append(obstacle)
 
 	def create_bullet(self, center, angle):

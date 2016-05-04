@@ -33,10 +33,7 @@ class Turret(pygame.sprite.Sprite):
 	def assign_center(self,center):
 		self.rect.center = center
 	#rotate to face mouse location
-	def tick(self,tank_center):
-
-		#get mouse x and y
-		mx,my = pygame.mouse.get_pos()
+	def tick(self, tank_center, mx, my):
 		# get coordinates btwn mouse and center of player
 		dx = mx - self.rect.centerx
 		dy = self.rect.centery - my
@@ -84,8 +81,8 @@ class Tank(pygame.sprite.Sprite):
 		self.currenty = float(self.rect.centery)
 		self.health = 100
 		self.ammo = 5
-	def tick(self):
-		self.turret.tick(self.rect.center)
+	def tick(self, mx, my):
+		self.turret.tick(self.rect.center, mx, my)
 	def do_damage(self,damage):
 		self.health -= damage
 		if self.health <= 0:

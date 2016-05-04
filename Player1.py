@@ -10,6 +10,7 @@ from GameSpace import GameSpace
 from GameObjects import *
 from GameScreens import *
 from GameConstants import *
+import cPickle as pickle
 
 
 class ClientConn(LineReceiver):
@@ -20,20 +21,26 @@ class ClientConn(LineReceiver):
 		self.player.add_connection(self)
 	def connectionMade(self):
 		self.sendLine(self.name)
+
 	def lineReceived(self,line):
+		line = pickle.loads(line)
 		print line
 		if self.state != PLAYING:
-			if line.find("GOTO_WAITING") != -1:
-				
-	
+			if line["type"] == "GOTO_WAITING":
 				self.player.state = WAITING_1
 				self.state = WAITING_1
-			elif line.find("GOTO_PLAYING") != -1: 
-	
+
+			elif line["type"] == "GOTO_PLAYING": 
+				i = 0
+				for obstacle in self.player.gs.game_obstacles:
+					obstacle.rect.center = line["obstacles"][i]
+					i += 1
 				self.player.state = PLAYING
 				self.state = PLAYING
 		else:
-			print line
+			if line["type"] == "GOTO_MENU":
+				self.player.state = TITLE_SCREEN
+				self.state = TITLE_SCREEN
 
 	def connectionLost(self, reason):
 		print 'lost connection to', SERVER_HOST, 'port', SERVER_PORT
@@ -192,71 +199,53 @@ class Player:
 				self.win_screen.click((mx,my))
 
 	def active_game(self):
-		
-		# Each player gets +1 ammo every 5 seconds
-		self.gs.ammo_increase_counter += 1./30
-		if self.gs.ammo_increase_counter >= 10.0:
-			self.gs.ammo_increase_counter = 0.
-			self.gs.players[0].increase_ammo(1)
-			self.gs.players[1].increase_ammo(1)
-			self.show_ammo()
-
+		# Send data to server
+		data = {}
+		data["player"] = 0
 		for event in pygame.event.get():
-
 			if event.type == QUIT:
+				self.connection.transport.loseConnection()
+				reactor.stop()
 				sys.exit()
-		
-			if event.type == KEYDOWN:
+			elif event.type == KEYDOWN:
 				binding = self.lookupBinding(event.key)
 				if binding != "not found":
 					self.inputState[binding] = True
-			# If any key is released, and it is mapped, make its pressed status false		
-			if event.type == KEYUP:
+			elif event.type == KEYUP:
 				binding = self.lookupBinding(event.key)
 				if binding != "not found":
 					self.inputState[binding] = False
-			# if mouse is pressed		
-			if event.type == MOUSEBUTTONDOWN:
-				#set click status to True
+			elif event.type == MOUSEBUTTONDOWN:
 				self.inputState["click"] = True
+			elif event.type == MOUSEBUTTONUP:
+				self.inputState["click"] = False
 
-			# on click , fire		
-			if event.type == MOUSEBUTTONUP:	
-				self.gs.players[0].click()
-				self.show_ammo()
+		data["mouse"] = pygame.mouse.get_pos()
+		data["inputState"] = self.inputState
+		data = pickle.dumps(data)
+		self.connection.sendLine(data)
 
-		# Handle tank mvt
-		for event, status in self.inputState.items():
-			# loop through dict, if the status of that button is True (pressed)
-			if status:
-				# on click, run click function in player
-				if event == "up" or event == "down":
-					# otherwise, it's a movement. Run move function
-					self.gs.players[0].move(event)
-				elif event == "left" or event == "right":
-					self.gs.players[0].rotate(event)
-			# Redraw all objects on screen
+		# Redraw all objects on screen
 		self.screen.fill((0,0,0))
 		# redraw map
 		self.screen.blit(self.map.image, self.map.rect)
 		#redraw bushes
 		for bush in self.gs.game_obstacles:
 			self.screen.blit(bush.image, bush.rect)
-		# tick player, and redraw		# Players should tick themselves from client side
+
+		# Redraw player
 		for player in self.gs.players:
-			player.tick()
 			self.screen.blit(player.image, player.rect)
 			self.screen.blit(player.turret.image, player.turret.rect)
-		#Tick bullets, and redraw		# Bullets should be ticked from server
+
+		# Redraw bullets
 		for bullet in self.gs.bullets:
-			bullet.tick()
 			self.screen.blit(bullet.image,bullet.rect)
 		# Draw ammo and health
 		self.draw_health_bars()	
 		self.show_ammo()
 
 		pygame.display.flip()
-
 
 
 	def draw_health_bars(self):
@@ -274,6 +263,7 @@ class Player:
 		reactor.connectTCP(SERVER_HOST, SERVER_PORT, ClientConnFactory(self))
 	def add_connection(self,connection):
 		self.connection = connection
+		print 'player connected'
 	
 if __name__ == '__main__':
 
