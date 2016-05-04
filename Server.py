@@ -104,14 +104,21 @@ class ServerConn(LineReceiver):
 		#	bullet.tick()
 
 		data = {}
-		# data["type"] = player_X_info:
-		#	"rect_center" 	= self.gs.players[X].rect.center
-		#	"angle"			= self.gs.players[X].angle
-		# 	"health"		= self.gs.players[X].health
-		# 	"ammo"			= self.gs.players[X].ammo
-		#	"turret_angle"  = self.gs.players[X].turret.angle
-		# data["type"] = bullet_info:
-		#	"bullets"		= [list of dicts]:
+		data["type"] = "UPDATE"
+		data["player1"] = {}
+		data["player1"]["rect_center"] = self.gs.players[0].rect.center
+		data["player1"]["angle"] = self.gs.players[0].angle
+		data["player1"]["health"] = self.gs.players[0].health
+		data["player1"]["ammo"] = self.gs.players[0].ammo
+		data["player1"]["turret_angle"] = self.gs.players[0].turret.angle
+		data["player2"] = {}
+		data["player2"]["rect_center"] = self.gs.players[1].rect.center
+		data["player2"]["angle"] = self.gs.players[1].angle
+		data["player2"]["health"] = self.gs.players[1].health
+		data["player2"]["ammo"] = self.gs.players[1].ammo
+		data["player2"]["turret_angle"] = self.gs.players[1].turret.angle
+
+		# data["bullets"] = [list of dicts]:
 		#						"center" 	= bullet.center
 		#						"angle"		= bullet.angle
 		#						"dist"		= bullet.total_distance
